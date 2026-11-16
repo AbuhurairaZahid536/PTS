@@ -61,7 +61,10 @@ export function reconcileStaffCategoryDuty({
     const id = Number(staff?.id ?? staff?.subject_id);
     if (!Number.isInteger(id) || id <= 0 || unique.has(id)) continue;
     unique.add(id);
-    const previous = byStaffId.get(id) || byEmployeeCode.get(String(staff.employee_id || "").trim()) || {};
+    // A report row with a different staff ID must never be borrowed just
+    // because two master records share an employee code.
+    const legacyMatch = byEmployeeCode.get(String(staff.employee_id || "").trim());
+    const previous = byStaffId.get(id) || (legacyMatch && !staffId(legacyMatch) ? legacyMatch : {}) || {};
     const assignments = dutyAssignmentsByStaffId.get(id) || [];
     const assigned = dutyIds.has(id) || assignments.length > 0;
     result.push({

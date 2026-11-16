@@ -43,6 +43,23 @@ async function getAllTraineesForDashboard() {
   return rows;
 }
 
+// Match the unfiltered All Staff list: every non-deleted person, including
+// staff without attendance records, a category, or a regular timetable.
+async function getAllStaffForDashboard() {
+  const [rows] = await pool.query(`
+    SELECT s.id, s.employee_id, s.belt_no,
+      s.first_name, s.last_name, s.status, s.designation,
+      s.category_id, sc.category_name, s.branch_id, sb.branch_name
+    FROM staff s
+    LEFT JOIN staff_categories sc ON sc.id = s.category_id
+    LEFT JOIN staff_branches sb ON sb.id = s.branch_id
+    WHERE s.is_deleted = 0
+    ORDER BY s.id DESC
+  `);
+  return rows;
+}
+
 module.exports = {
   getAllTraineesForDashboard,
+  getAllStaffForDashboard,
 };

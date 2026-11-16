@@ -47,6 +47,7 @@ import {
 import dayjs from "dayjs";
 
 import api from "../services/api";
+import { collectStaffDutyAssignments, reconcileStaffCategoryDuty } from "../utils/staffDashboardDuty";
 import { useAuth } from "../contexts/AuthContext";
 
 const { Title, Text } = Typography;
@@ -54,7 +55,7 @@ const { Title, Text } = Typography;
 const PAGE_SIZE = 500;
 
 const DASHBOARD_CACHE_PREFIX =
-  "pts_dashboard_snapshot_v1_";
+  "pts_dashboard_snapshot_v2_";
 
 const DASHBOARD_RETRY_DELAY_MS =
   900;
@@ -362,14 +363,18 @@ const STATUS_CONFIG = {
     color: "#F59E0B",
     soft: "#FFFBEB",
   },
+  Duty: { color: "#2563EB", soft: "#EFF6FF" },
+  "No Timetable": { color: "#DC2626", soft: "#FEF2F2" },
+  "Not Processed": { color: "#94A3B8", soft: "#F8FAFC" },
   Repatriate: {
     color: "#EC4899",
     soft: "#FDF2F8",
   },
 };
 
-const STATUS_NAMES =
-  Object.keys(STATUS_CONFIG);
+const STATUS_NAMES = [
+  "Present", "Absent", "Leave", "Long Weekend", "OSD", "Medical Rest", "Repatriate",
+];
 
 const STAFF_STATUS_NAMES = [
   "Present",
@@ -378,6 +383,20 @@ const STAFF_STATUS_NAMES = [
   "Long Weekend",
   "OSD",
 ];
+
+function staffStatusNames(rows) {
+  const names = [...STAFF_STATUS_NAMES];
+  for (const name of ["Duty", "No Timetable", "Not Processed", "Medical Rest", "Repatriate"]) {
+    if ((rows || []).some((row) => rowStatusName(row) === name)) names.push(name);
+  }
+  return names;
+}
+
+function staffDutyDescription(assignment) {
+  return [assignment.group_name, assignment.shift_name, assignment.duty_point_name,
+    assignment.start_time && assignment.end_time
+      ? `${assignment.start_time} – ${assignment.end_time}` : null].filter(Boolean).join(" • ");
+}
 
 function dashboardStatusLabel(
   statusName,
@@ -610,6 +629,12 @@ function manualAbsenceText(row) {
 */
 
 function rowStatusName(row) {
+  if (normalize(row?.subject_type) === "STAFF") {
+    const attendance = normalize(row?.attendance_status);
+    if (row?._dashboard_duty || attendance === "DUTY") return "Duty";
+    if (attendance === "NO_TIMETABLE" ||
+      (["", "PENDING", "NOT_PROCESSED"].includes(attendance) && normalize(row?.timing_status) === "NO_TIMETABLE")) return "No Timetable";
+  }
   const attendance =
     normalize(
       row?.attendance_status
@@ -650,6 +675,7 @@ function rowStatusName(row) {
     attendance === "WEEKEND" ||
     exemption === "WEEKEND" ||
     exemption === "LONG_WEEKEND" ||
+    (normalize(row?.subject_type) === "STAFF" && exemption === "DUTY_REST") ||
     description.includes("WEEKEND")
   ) {
     return "Long Weekend";
@@ -683,7 +709,7 @@ function rowStatusName(row) {
     return "Absent";
   }
 
-  return null;
+  return normalize(row?.subject_type) === "STAFF" ? "Not Processed" : null;
 }
 
 function identityKey(row) {
@@ -1557,6 +1583,7 @@ function applyLongWeekendsToRows({
 
   return sourceRows.map(
     (row) => {
+      if (subjectType === "STAFF" && row._dashboard_duty) return row;
       const match =
         activeWeekends.find(
           (record) =>
@@ -1754,7 +1781,7 @@ function statementIsLongWeekend(
 function getStatusCounts(rows) {
   const counts = {};
 
-  STATUS_NAMES.forEach(
+  Object.keys(STATUS_CONFIG).forEach(
     (name) => {
       counts[name] = 0;
     }
@@ -1863,7 +1890,7 @@ function buildGroupStatements(
           key: name,
           name,
           rows: enrolledRows,
-          total: groupRows.length,
+          total: enrolledRows.length,
           enrolled:
             enrolledRows.length,
           ...counts,
@@ -3041,7 +3068,7 @@ function GroupPieCard({
           statusNames={
             subjectType ===
             "STAFF"
-              ? STAFF_STATUS_NAMES
+              ? staffStatusNames(statement.rows)
               : STATUS_NAMES
           }
           subjectType={subjectType}
@@ -3066,7 +3093,7 @@ function StatementTable({
 }) {
   const statementStatusNames =
     subjectType === "STAFF"
-      ? STAFF_STATUS_NAMES
+      ? staffStatusNames(rows.flatMap((statement) => statement.rows || []))
       : STATUS_NAMES;
 
   const columns = [
@@ -3426,7 +3453,7 @@ function SessionSection({
 }) {
   const sectionStatusNames =
     subjectType === "STAFF"
-      ? STAFF_STATUS_NAMES
+      ? staffStatusNames(rows)
       : STATUS_NAMES;
 
   const sessionOpen =
@@ -5048,6 +5075,20 @@ export default function Dashboard() {
     );
 
 
+  const loadStaffRoster = useCallback(async () => {
+    const response = await api.get("/dashboard/staff", { timeout: 45000 });
+    if (!Array.isArray(response.data?.data)) throw new Error("Invalid Dashboard staff roster response.");
+    return response.data.data;
+  }, []);
+
+  const loadCustomShiftAttendanceRows = useCallback(async (date) => {
+    const response = await api.get("/custom-shifts/attendance-summary", {
+      params: { attendance_date: date }, timeout: 45000,
+    });
+    if (!Array.isArray(response.data?.data?.rows)) throw new Error("Invalid Dashboard custom shift response.");
+    return response.data.data.rows;
+  }, []);
+
   const loadShiftAttendanceRows =
     useCallback(
       async (
@@ -5084,8 +5125,7 @@ export default function Dashboard() {
             "Dashboard Shift Duty attendance could not be loaded:",
             error
           );
-
-          return [];
+          throw error;
         }
       },
       []
@@ -5167,6 +5207,8 @@ export default function Dashboard() {
             traineeMedicalRows,
             staffMedicalRows,
             shiftDutyRows,
+            staffRosterRows,
+            customShiftRows,
           ] = await Promise.all([
             loadReportRows(
               "TRAINEE",
@@ -5202,12 +5244,26 @@ export default function Dashboard() {
             loadShiftAttendanceRows(
               date
             ),
+            loadStaffRoster(),
+            loadCustomShiftAttendanceRows(date),
           ]);
+
+          const dutyAssignmentsByStaffId = collectStaffDutyAssignments(shiftDutyRows, customShiftRows);
+          const shiftDutyStaffIds = new Set(dutyAssignmentsByStaffId.keys());
+          const reconcileStaffSession = (report, sessionType) => {
+            const rows = reconcileStaffCategoryDuty({
+              roster: staffRosterRows, rows: report.rows,
+              dutyIds: shiftDutyStaffIds, dutyAssignmentsByStaffId,
+            }).map((row) => ({ ...row, attendance_date: date, session_type: sessionType }));
+            return { rows, total: rows.length };
+          };
+          const staffMorningData = reconcileStaffSession(sm, "MORNING");
+          const staffEveningData = reconcileStaffSession(se, "EVENING");
 
           setTraineeMorning(tm);
           setTraineeEvening(te);
-          setStaffMorning(sm);
-          setStaffEvening(se);
+          setStaffMorning(staffMorningData);
+          setStaffEvening(staffEveningData);
           setRepatriates(
             filterCompletedCourseRows(
               repatriateRows
@@ -5243,8 +5299,8 @@ export default function Dashboard() {
             date,
             traineeMorning: tm,
             traineeEvening: te,
-            staffMorning: sm,
-            staffEvening: se,
+            staffMorning: staffMorningData,
+            staffEvening: staffEveningData,
           });
         } catch (error) {
           const cached =
@@ -5291,6 +5347,8 @@ export default function Dashboard() {
         loadTraineeRoster,
         loadMedicalRestRows,
         loadShiftAttendanceRows,
+        loadStaffRoster,
+        loadCustomShiftAttendanceRows,
         user,
       ]
     );
@@ -5757,8 +5815,13 @@ export default function Dashboard() {
 
   const openList =
     (title, rows) => {
+      const rosterById = new Map(staffMorning.rows.map((row) => [Number(row.subject_id), row]));
+      const enriched = rows.map((row) => normalize(row.subject_type) === "STAFF"
+        ? { ...rosterById.get(Number(row.subject_id)), ...row,
+            belt_no: row.belt_no || row.staff_belt_no || rosterById.get(Number(row.subject_id))?.belt_no }
+        : row);
       setDetailTitle(title);
-      setDetailRows(rows);
+      setDetailRows(enriched);
       setDetailOpen(true);
     };
 
@@ -5816,6 +5879,7 @@ export default function Dashboard() {
               <td>${index + 1}</td>
               <td>${esc(row.employee_id)}</td>
               <td>${esc(name)}</td>
+              ${activeSubject === "STAFF" ? `<td>${esc(row.belt_no || "Not recorded")}</td><td>${esc((row.duty_assignments || []).map(staffDutyDescription).join("; ") || "—")}</td>` : ""}
               <td>${esc(group)}</td>
               <td>${esc(subGroup)}</td>
               <td>${esc(status)}</td>
@@ -5896,6 +5960,7 @@ export default function Dashboard() {
                 <th>Sr.</th>
                 <th>${esc(identifierTitle)}</th>
                 <th>Name</th>
+                ${activeSubject === "STAFF" ? "<th>Belt No.</th><th>Assigned Duty / Shift</th>" : ""}
                 <th>${activeSubject === "TRAINEE" ? "Course" : "Category"}</th>
                 <th>${activeSubject === "TRAINEE" ? "Platoon" : "Branch"}</th>
                 <th>Dashboard Status</th>
@@ -6129,7 +6194,16 @@ export default function Dashboard() {
     },
   ];
 
+  const isStaffDutyDetail = activeSubject === "STAFF" && detailRows.some((row) => row.duty_assignments?.length);
   const detailColumns = [
+    ...(activeSubject === "STAFF" ? [{
+      title: "Belt No.", dataIndex: "belt_no", width: 130,
+      render: (value) => value || "Not recorded",
+    }] : []),
+    ...(isStaffDutyDetail ? [{
+      title: "Assigned Duty / Shift", width: 300,
+      render: (_, row) => (row.duty_assignments || []).map((assignment) => staffDutyDescription(assignment)).join("; ") || "—",
+    }] : []),
     {
       title:
         activeSubject === "TRAINEE"
@@ -6821,6 +6895,15 @@ export default function Dashboard() {
         </div>
       </Card>
 
+      {activeSubject === "STAFF" && summaryCounts["No Timetable"] > 0 && (
+        <Card size="small" style={{ marginBottom: 12, borderColor: "#FCA5A5" }}>
+          <Text strong>{summaryCounts["No Timetable"]} staff have No Timetable. </Text>
+          <Text>Required Action: Assign staff timetable / duty shift. </Text>
+          <Button type="link" onClick={() => openList("Staff - No Timetable", filterRowsByStatus(summaryRows, "No Timetable"))}>
+            {"View Names & Belt Nos."}
+          </Button>
+        </Card>
+      )}
       {/* TOP STATUS CARDS */}
       <Spin spinning={loading}>
         <div
