@@ -1,0 +1,63 @@
+/* Compact public contact layout. Scoped to the public Home page only. */
+.pts-contact-compact { padding: 48px 0 30px; background: linear-gradient(120deg,#06192d 0%,#092944 72%,#0b3556 100%); }
+.pts-contact-compact .pts-contact-shell { position: relative; z-index: 2; }
+.pts-contact-upper { display: grid; grid-template-columns: minmax(0, .94fr) minmax(0, 1.06fr); align-items: center; gap: clamp(25px,5vw,78px); }
+.pts-contact-identity { min-width: 0; }
+.pts-contact-brand-line { display: flex; align-items: center; gap: 16px; margin-bottom: 17px; }
+.pts-contact-compact .contact-logo { flex: none; width: 61px; height: 61px; margin: 0; border: 1px solid rgba(255,255,255,.26); outline: 0; box-shadow: 0 6px 18px rgba(0,0,0,.16); overflow: hidden; }
+.pts-contact-compact .contact-logo img { width: 100%; height: 100%; object-fit: contain; }
+.pts-contact-compact .light-kicker { font-size: 10px; letter-spacing: .18em; font-weight: 800; color: #70c0ee; }
+.pts-contact-compact h2 { margin: 0 0 13px; max-width: 600px; font-size: clamp(29px,3.3vw,45px); line-height: 1.14; letter-spacing: -.035em; color: #fff; }
+.pts-contact-compact .pts-contact-identity > p { margin: 0 0 21px; color: #bdccda; font-size: 13px; line-height: 1.65; }
+.pts-contact-map-link { display: inline-flex; align-items: center; flex-wrap: wrap; gap: 9px; color: #8acdf8; padding: 10px 13px; border: 1px solid rgba(114,186,233,.23); background: rgba(255,255,255,.045); border-radius: 10px; font-size: 12px; text-decoration: none; line-height: 1.5; max-width: 100%; box-sizing: border-box; }
+.pts-contact-map-link:not(.pts-contact-map-static):hover { color: #fff; border-color: #82c1eb; background: rgba(255,255,255,.1); }
+.pts-contact-map-link:focus-visible { outline: 2px solid #8acdf8; outline-offset: 3px; }
+.pts-contact-map-link > svg:last-child { margin-left: 5px; font-size: 11px; }
+.pts-contact-map-static { cursor: default; color: #bed6e6; }
+/* Feedback card is adjacent to the PTS heading, never full-width across a separate row. */
+.pts-contact-compact .pts-suggestion-box { grid-column: auto; display: block; padding: 21px 24px; margin: 0; border: 1px solid rgba(190,216,234,.19); background: rgba(255,255,255,.066); border-radius: 15px; box-shadow: 0 14px 35px rgba(0,7,19,.16); min-width: 0; }
+.pts-contact-compact .pts-suggestion-heading { margin-bottom: 15px; }
+.pts-contact-compact .pts-suggestion-heading span { font-size: 9px; letter-spacing: .14em; color: #84cef5; }
+.pts-contact-compact .pts-suggestion-heading h3 { font-size: 20px; margin: 4px 0 0; line-height: 1.25; color: #fff; }
+.pts-contact-compact .pts-suggestion-form { gap: 10px; }
+.pts-contact-compact .pts-suggestion-inputs { grid-template-columns: repeat(2,minmax(0,1fr)); gap: 11px; }
+.pts-contact-compact .pts-suggestion-form label { gap: 5px; font-size: 11px; line-height: 1.4; }
+.pts-contact-compact .pts-suggestion-form label small { display: inline; font-size: 10px; font-weight: 400; color: #bed2df; }
+.pts-contact-compact .pts-suggestion-form input:not([type="checkbox"]), .pts-contact-compact .pts-suggestion-form textarea { padding: 9px 11px; border-radius: 7px; font-size: 12px; }
+.pts-contact-compact .pts-suggestion-form textarea { min-height: 72px; resize: vertical; }
+.pts-contact-compact .pts-suggestion-form .pts-suggestion-consent { display: flex; align-items: flex-start; gap: 6px; font-size: 10px; line-height: 1.45; }
+.pts-contact-compact .pts-suggestion-consent input { flex: none; margin: 2px 3px 0 0; }
+.pts-contact-compact .pts-suggestion-actions { display: flex; flex-wrap: nowrap; gap: 12px; }
+.pts-contact-compact .pts-suggestion-actions span { max-width: 250px; font-size: 10px; line-height: 1.5; }
+.pts-contact-compact .pts-suggestion-actions button { flex: none; padding: 10px 15px; font-size: 11px; white-space: nowrap; }
+.pts-contact-compact .pts-suggestion-response { font-size: 11px; padding: 8px 10px; }
+/* One three-column row for all official contact details. */
+.pts-contact-information { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 0; margin-top: 30px; padding: 18px 10px; border-top: 1px solid rgba(255,255,255,.16); border-bottom: 1px solid rgba(255,255,255,.12); background: rgba(255,255,255,.028); border-radius: 8px; }
+.pts-contact-information-item { display: flex; flex-direction: column; justify-content: center; gap: 6px; min-width: 0; padding: 2px 23px; }
+.pts-contact-information-item + .pts-contact-information-item { border-left: 1px solid rgba(255,255,255,.15); }
+.pts-contact-information-item span { font-size: 10px; font-weight: 750; letter-spacing: .08em; text-transform: uppercase; color: #8cb3cf; }
+.pts-contact-information-item strong { font-size: 13px; line-height: 1.45; overflow-wrap: anywhere; color: #fff; }
+/* Copyright strip immediately under contact section. */
+.pts-contact-compact + .public-footer { padding: 18px 0; background: #041320; }
+.pts-contact-compact + .public-footer .public-footer-inner { gap: 14px; font-size: 11px; color: #aebfcd; }
+.pts-contact-compact + .public-footer .public-footer-inner > div:first-child strong { font-size: 11px; }
+@media (max-width: 900px) {
+  .pts-contact-upper { grid-template-columns: 1fr; gap: 25px; }
+  .pts-contact-compact h2 { max-width: 700px; }
+  .pts-contact-compact .pts-suggestion-box { max-width: 740px; }
+}
+@media (max-width: 680px) {
+  .pts-contact-compact { padding: 35px 0 22px; }
+  .pts-contact-compact .pts-suggestion-box { padding: 18px; }
+  .pts-contact-information { grid-template-columns: 1fr; gap: 0; margin-top: 24px; padding: 5px 15px; }
+  .pts-contact-information-item { padding: 13px 3px; }
+  .pts-contact-information-item + .pts-contact-information-item { border-left: none; border-top: 1px solid rgba(255,255,255,.12); }
+  .pts-contact-compact + .public-footer .public-footer-inner { text-align: center; grid-template-columns: 1fr; }
+  .pts-contact-compact + .public-footer .public-footer-inner > div:first-child { align-items: center; }
+  .pts-contact-compact + .public-footer .public-footer-inner > div:last-child { text-align: center; }
+}
+@media (max-width: 440px) {
+  .pts-contact-compact .pts-suggestion-inputs { grid-template-columns: 1fr; }
+  .pts-contact-compact .pts-suggestion-actions { flex-wrap: wrap; }
+  .pts-contact-compact .pts-suggestion-actions button { width: 100%; }
+}

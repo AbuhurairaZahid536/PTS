@@ -1,0 +1,60 @@
+/* PTS Public Website additions — intentionally isolated from dashboard and attendance CSS. */
+.pts-public-news {position:relative; z-index:3; margin:-1px 0 0; padding:0 18px; background:#f6f9fd;}
+.pts-public-news-inner {display:flex; align-items:center; margin:0 auto; min-height:72px; border:1px solid #dbe4ef; border-radius:0 0 14px 14px; overflow:hidden; background:#fff; box-shadow:0 12px 29px rgba(11,39,70,.07);}
+.pts-public-news-label {align-self:stretch; display:flex; align-items:center; padding:0 24px; flex:none; font-size:12px; font-weight:800; letter-spacing:.12em; color:white; background:#133d64; white-space:nowrap;}
+.pts-public-news-viewport {overflow:hidden; flex:1; min-width:0; mask-image:linear-gradient(90deg,transparent,#000 2%,#000 98%,transparent);}
+.pts-public-news-track {display:flex; width:max-content; animation:pts-ticker-scroll 35s linear infinite;}
+.pts-public-news-viewport:hover .pts-public-news-track {animation-play-state:paused;}
+.pts-public-news-group {display:flex; align-items:center; flex:none; min-width:100%;}
+.pts-news-item {display:inline-flex; align-items:center; flex:none; gap:12px; padding:16px 30px; font-weight:650; color:#153753; white-space:nowrap;}
+.pts-news-item:before {content:'●';color:#008a8f;font-size:8px;}
+.pts-public-news-empty {padding:21px 24px; color:#54677a; font-size:14px;}
+@keyframes pts-ticker-scroll {from{transform:translateX(0)}to{transform:translateX(-50%)}}
+.pts-public-active-nav {color:#fff;font-weight:750;font-size:13px;}
+.pts-public-tender-main {min-height:65vh;padding:45px 15px 85px;}
+.pts-back-home {background:transparent;border:0;color:#21527d;font-weight:700;cursor:pointer;padding:7px 0;display:inline-flex;align-items:center;gap:10px;}
+.pts-public-page-heading {margin:24px 0 40px;padding-bottom:25px;border-bottom:1px solid #dce7ef;}
+.pts-public-page-heading span {font-size:11px;font-weight:800;letter-spacing:.19em;color:#036d86;}
+.pts-public-page-heading h1 {margin:10px 0;color:#0a2844;font-size:clamp(30px,4vw,48px);font-weight:800;}
+.pts-public-page-heading p {font-size:16px;color:#5c7185;max-width:680px;line-height:1.7;}
+.pts-tenders-grid {display:grid;grid-template-columns:repeat(auto-fit,minmax(min(320px,100%),1fr));align-items:start;gap:26px;}
+.pts-tender-card {overflow:hidden;border:1px solid #dce5ed;border-radius:15px;background:#fff;box-shadow:0 12px 30px rgba(0,35,65,.07);}
+.pts-tender-card>a {display:block;}
+.pts-tender-card img {width:100%;max-height:490px;object-fit:contain;background:#f2f5f8;border-bottom:1px solid #e3eaf0;}
+.pts-tender-placeholder {height:210px;display:flex;align-items:center;justify-content:center;gap:12px;color:#8da4b6;background:#f3f7fa;flex-direction:column;font-size:19px;}
+.pts-tender-placeholder span {font-size:13px;}
+.pts-tender-content {padding:24px;}
+.pts-tender-content time {font-weight:700;color:#43728d;font-size:12px;}
+.pts-tender-content h2 {margin:8px 0 14px;color:#082b4a;font-size:22px;line-height:1.3;}
+.pts-tender-description {color:#496071;white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.8;}
+.pts-open-ad {color:#125b8f;font-weight:800;text-decoration:none;}
+.pts-tenders-empty {padding:70px 20px;text-align:center;border:1px dashed #bdd1e0;border-radius:15px;color:#577083;}
+.pts-tenders-empty svg {font-size:42px;color:#7f9eae;}
+.pts-tenders-empty h2 {color:#173a59;}
+.pts-suggestion-box {grid-column:1/-1;padding:32px;display:grid;grid-template-columns:minmax(230px,.8fr) minmax(340px,1.2fr);gap:30px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.16);border-radius:18px;margin:24px 0 0;}
+.pts-suggestion-heading span {color:#6db7da;font-weight:800;letter-spacing:.14em;font-size:11px;}
+.pts-suggestion-heading h3 {color:#fff;font-size:clamp(24px,3vw,32px);margin:10px 0;line-height:1.25;}
+.pts-suggestion-heading p {color:#b9c9d7;line-height:1.8;max-width:400px;}
+.pts-suggestion-form {display:flex;flex-direction:column;gap:15px;min-width:0;}
+.pts-suggestion-inputs {display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+.pts-suggestion-form label {display:flex;flex-direction:column;gap:8px;color:#e6f0f7;font-size:13px;font-weight:700;}
+.pts-suggestion-form input:not([type="checkbox"]),.pts-suggestion-form textarea {width:100%;box-sizing:border-box;padding:13px 15px;color:#13324e;border:1px solid #d3e0ea;border-radius:9px;background:#fff;font:inherit;font-weight:450;}
+.pts-suggestion-form textarea {resize:vertical;min-height:115px;}
+.pts-suggestion-form input:focus-visible,.pts-suggestion-form textarea:focus-visible {outline:2px solid #63afe6;outline-offset:2px;}
+.pts-suggestion-form .pts-suggestion-consent {flex-direction:row;align-items:flex-start;font-weight:450;line-height:1.65;color:#c8d7e2;}
+.pts-suggestion-consent input {margin:4px 4px 0 0;}
+.pts-suggestion-honeypot {position:absolute;left:-10000px;height:0;overflow:hidden;}
+.pts-suggestion-actions {display:flex;align-items:center;justify-content:space-between;gap:15px;flex-wrap:wrap;}
+.pts-suggestion-actions span {font-size:11px;color:#b4cad7;max-width:340px;}
+.pts-suggestion-actions button {background:#e7f6ff;border:0;padding:13px 21px;border-radius:8px;color:#113d62;font-weight:800;cursor:pointer;}
+.pts-suggestion-actions button:disabled {opacity:.55;cursor:wait;}
+.pts-suggestion-response {padding:12px;border-radius:8px;font-size:13px;line-height:1.6;margin:0;}
+.pts-suggestion-response.success {color:#b2ffd4;background:rgba(0,125,76,.17);}
+.pts-suggestion-response.error {color:#ffd8d8;background:rgba(180,42,42,.22);}
+@media(max-width:850px){.pts-suggestion-box {grid-template-columns:1fr;}.pts-suggestion-inputs {grid-template-columns:1fr;}}
+@media(max-width:575px){.pts-public-news {padding:0 8px;}.pts-public-news-inner {min-height:56px;}.pts-public-news-label {font-size:10px;padding:0 12px;}.pts-news-item {font-size:12px;padding:13px 18px;}.pts-suggestion-box {padding:18px;}.pts-public-tender-main {padding:24px 16px 60px;}}
+@media(prefers-reduced-motion:reduce){.pts-public-news-track {animation:none;width:auto;}.pts-public-news-viewport {overflow-x:auto;}.pts-public-news-group[aria-hidden="true"] {display:none;}}
+
+.pts-public-mobile-tenders {display:none;color:#fff;font-size:12px;font-weight:750;border:1px solid rgba(255,255,255,.3);background:transparent;border-radius:8px;padding:9px 12px;cursor:pointer;}
+@media(max-width:1050px){.pts-public-mobile-tenders {display:inline-flex;align-items:center;margin-left:auto;}.pts-public-tenders-current {opacity:.8;}.improved-public-home .public-login-btn {margin-left:8px;}}
+@media(max-width:390px){.pts-public-mobile-tenders {padding:8px 9px;}.improved-public-home .public-brand-text strong {font-size:12px;}}

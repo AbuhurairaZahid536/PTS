@@ -1,0 +1,7 @@
+# Dependencies, local configuration, build output, and uploads are also
+# excluded by pts-farooqabad/.gitignore.
+
+# Local source snapshots and accidental shell-output files
+/pts-farooqabad/frontend/src/pages/*.before-*
+/pts-farooqabad/)*
+/pts-farooqabad/rcpagesManualAbsenceManagement.*

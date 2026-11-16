@@ -1,0 +1,873 @@
+/*
+|--------------------------------------------------------------------------
+| PUBLIC WEBSITE CMS
+|--------------------------------------------------------------------------
+*/
+
+.public-cms-page {
+  width: 100%;
+}
+
+
+/*
+|--------------------------------------------------------------------------
+| LOADER
+|--------------------------------------------------------------------------
+*/
+
+.public-cms-loader {
+  min-height: 420px;
+
+  display: flex;
+
+  flex-direction: column;
+
+  align-items: center;
+
+  justify-content: center;
+
+  gap: 15px;
+}
+
+
+/*
+|--------------------------------------------------------------------------
+| STICKY HEADER
+|--------------------------------------------------------------------------
+*/
+
+.public-cms-sticky-header {
+  position: sticky;
+
+  top: 0;
+
+  z-index: 50;
+
+  margin:
+    -24px -24px 18px;
+
+  padding:
+    16px 24px;
+
+  display: flex;
+
+  align-items: center;
+
+  justify-content: space-between;
+
+  gap: 20px;
+
+  background:
+    rgba(
+      255,
+      255,
+      255,
+      0.97
+    );
+
+  backdrop-filter:
+    blur(
+      14px
+    );
+
+  border-bottom:
+    1px solid
+    #e5eaf0;
+
+  box-shadow:
+    0 5px 18px
+    rgba(
+      18,
+      48,
+      71,
+      0.05
+    );
+}
+
+
+.public-cms-heading {
+  display: flex;
+
+  align-items: center;
+
+  gap: 15px;
+}
+
+
+.public-cms-save-status {
+  display: flex;
+
+  align-items: center;
+}
+
+
+.public-cms-main-alert {
+  margin-bottom: 16px;
+}
+
+
+/*
+|--------------------------------------------------------------------------
+| TABS
+|--------------------------------------------------------------------------
+*/
+
+.public-cms-tabs
+.ant-tabs-nav {
+  margin-bottom: 18px;
+}
+
+
+.public-cms-tabs
+.ant-tabs-tab {
+  font-weight: 600;
+}
+
+
+/*
+|--------------------------------------------------------------------------
+| EDITOR CARDS
+|--------------------------------------------------------------------------
+*/
+
+.public-cms-editor-card {
+  margin-bottom: 14px;
+
+  border:
+    1px solid
+    #e5ebf1;
+
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+
+.public-cms-editor-card:hover {
+  border-color:
+    #bed2e2;
+
+  box-shadow:
+    0 8px 22px
+    rgba(
+      18,
+      50,
+      73,
+      0.06
+    );
+}
+
+
+/*
+|--------------------------------------------------------------------------
+| INLINE PICTURE / VIDEO UPLOAD
+|--------------------------------------------------------------------------
+*/
+
+.public-cms-inline-media {
+  display: grid;
+
+  grid-template-columns:
+    250px minmax(
+      0,
+      1fr
+    );
+
+  gap: 24px;
+
+  padding: 20px;
+
+  border:
+    1px solid
+    #dce6ee;
+
+  border-radius: 14px;
+
+  background:
+    #f8fafc;
+}
+
+
+.public-cms-inline-preview {
+  width: 250px;
+
+  height: 200px;
+
+  overflow: hidden;
+
+  border-radius: 12px;
+
+  border:
+    1px solid
+    #d8e2ea;
+
+  background:
+    #eaf0f5;
+
+  display: flex;
+
+  align-items: center;
+
+  justify-content: center;
+}
+
+
+.public-cms-inline-preview
+.ant-image {
+  width: 100%;
+
+  height: 100%;
+}
+
+
+.public-cms-inline-preview
+.ant-image-img {
+  width: 100%;
+
+  height: 200px;
+
+  object-fit: cover;
+}
+
+
+.public-cms-inline-preview
+video {
+  width: 100%;
+
+  height: 100%;
+
+  object-fit: cover;
+
+  background:
+    #07192d;
+}
+
+
+.public-cms-inline-placeholder {
+  width: 100%;
+
+  height: 100%;
+
+  display: flex;
+
+  flex-direction: column;
+
+  align-items: center;
+
+  justify-content: center;
+
+  gap: 10px;
+
+  color:
+    #8999a8;
+}
+
+
+.public-cms-inline-placeholder
+.anticon {
+  font-size: 42px;
+
+  color:
+    #9dadbb;
+}
+
+
+.public-cms-inline-placeholder
+span {
+  font-size: 12px;
+}
+
+
+.public-cms-inline-controls {
+  display: flex;
+
+  flex-direction: column;
+
+  align-items: flex-start;
+
+  justify-content: center;
+
+  gap: 11px;
+}
+
+
+.public-cms-inline-controls
+> .ant-typography:first-child {
+  font-size: 16px;
+
+  color:
+    #17344d;
+}
+
+
+.public-cms-inline-help {
+  line-height: 1.6;
+
+  max-width: 650px;
+}
+
+
+.public-cms-or {
+  width: 100%;
+
+  margin-top: 3px;
+
+  color:
+    #9aa8b5;
+
+  font-size: 9px;
+
+  font-weight: 700;
+
+  letter-spacing: 1px;
+}
+
+
+.public-cms-remove-selection {
+  padding-left: 0 !important;
+}
+
+
+/*
+|--------------------------------------------------------------------------
+| MEDIA GRID
+|--------------------------------------------------------------------------
+*/
+
+.public-cms-media-grid {
+  display: grid;
+
+  grid-template-columns:
+    repeat(
+      auto-fill,
+      minmax(
+        255px,
+        1fr
+      )
+    );
+
+  gap: 16px;
+}
+
+
+.public-cms-media-card {
+  overflow: hidden;
+
+  border-radius:
+    12px !important;
+
+  border:
+    1px solid
+    #e2e9f0 !important;
+
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+
+.public-cms-media-card:hover {
+  transform:
+    translateY(
+      -3px
+    );
+
+  box-shadow:
+    0 12px 28px
+    rgba(
+      14,
+      47,
+      70,
+      0.09
+    );
+}
+
+
+.public-cms-media-preview {
+  width: 100%;
+
+  height: 170px;
+
+  object-fit: cover;
+
+  background:
+    #07192d;
+}
+
+
+.public-cms-empty {
+  min-height: 180px;
+
+  display: flex;
+
+  flex-direction: column;
+
+  align-items: center;
+
+  justify-content: center;
+
+  gap: 12px;
+
+  border:
+    1px dashed
+    #cfd8e1;
+
+  border-radius:
+    12px;
+
+  background:
+    #fafbfd;
+}
+
+
+.public-cms-empty
+.anticon {
+  font-size: 34px;
+
+  color:
+    #9eacb9;
+}
+
+
+/*
+|--------------------------------------------------------------------------
+| PUBLIC WEBSITE IMAGE SUPPORT
+|--------------------------------------------------------------------------
+*/
+
+.public-site-dynamic-image {
+  width: 100%;
+
+  height: 100%;
+
+  display: block;
+
+  object-fit: cover;
+}
+
+
+/*
+|--------------------------------------------------------------------------
+| BRAND LOGO IMAGE
+|--------------------------------------------------------------------------
+|
+| Important:
+| CMS logo is already transparent PNG.
+| Do not crop, scale or add white background.
+|--------------------------------------------------------------------------
+*/
+
+.public-site-logo-image {
+  width: 100% !important;
+
+  height: 100% !important;
+
+  display: block !important;
+
+  object-fit: contain !important;
+
+  object-position: center !important;
+
+  padding: 0 !important;
+
+  margin: 0 !important;
+
+  background: transparent !important;
+
+  border: none !important;
+
+  outline: none !important;
+
+  box-shadow: none !important;
+
+  transform: none !important;
+}
+
+
+/*
+|--------------------------------------------------------------------------
+| PUBLIC MEDIA CONTAINERS
+|--------------------------------------------------------------------------
+*/
+
+.fake-campus-picture.has-public-media,
+.about-photo-placeholder.has-public-media,
+.principal-photo.has-public-media,
+.leader-photo.has-public-media,
+.facility-large-picture.has-public-media,
+.facility-small-picture.has-public-media,
+.video-fake-campus.has-public-media,
+.gallery-card.has-public-media {
+  padding: 0;
+
+  position: relative;
+
+  overflow: hidden;
+}
+
+
+.leader-photo {
+  position: relative;
+
+  overflow: hidden;
+}
+
+
+.leader-photo.has-public-media
+.leader-avatar,
+.leader-photo.has-public-media
+> span {
+  display: none;
+}
+
+
+.principal-photo.has-public-media
+> svg,
+.principal-photo.has-public-media
+> span,
+.about-photo-placeholder.has-public-media
+> svg,
+.about-photo-placeholder.has-public-media
+> strong,
+.about-photo-placeholder.has-public-media
+> span,
+.facility-large-picture.has-public-media
+> svg,
+.facility-large-picture.has-public-media
+> strong,
+.facility-large-picture.has-public-media
+> span,
+.facility-small-picture.has-public-media
+> svg,
+.facility-small-picture.has-public-media
+> span {
+  display: none;
+}
+
+
+/*
+|--------------------------------------------------------------------------
+| BRAND LOGO CONTAINERS
+|--------------------------------------------------------------------------
+|
+| No white background.
+| No artificial padding.
+| No zoom.
+| Full transparent PNG remains visible.
+|--------------------------------------------------------------------------
+*/
+
+.public-brand-logo.has-public-logo,
+.hero-big-logo.has-public-logo,
+.contact-logo.has-public-logo,
+.login-main-logo.has-public-logo {
+  padding: 0 !important;
+
+  margin: 0 !important;
+
+  background: transparent !important;
+
+  border: none !important;
+
+  outline: none !important;
+
+  box-shadow: none !important;
+
+  overflow: visible !important;
+}
+
+
+.public-brand-logo.has-public-logo
+.public-site-logo-image,
+.hero-big-logo.has-public-logo
+.public-site-logo-image,
+.contact-logo.has-public-logo
+.public-site-logo-image,
+.login-main-logo.has-public-logo
+.public-site-logo-image {
+  width: 100% !important;
+
+  height: 100% !important;
+
+  display: block !important;
+
+  object-fit: contain !important;
+
+  object-position: center center !important;
+
+  padding: 0 !important;
+
+  margin: 0 !important;
+
+  background: transparent !important;
+
+  border: none !important;
+
+  border-radius: 0 !important;
+
+  outline: none !important;
+
+  box-shadow: none !important;
+
+  transform: none !important;
+
+  transform-origin: center center !important;
+}
+
+
+/*
+|--------------------------------------------------------------------------
+| HEADER LOGO
+|--------------------------------------------------------------------------
+*/
+
+.public-brand-logo.has-public-logo {
+  background: transparent !important;
+
+  padding: 0 !important;
+
+  overflow: visible !important;
+}
+
+
+/*
+|--------------------------------------------------------------------------
+| HERO LOGO
+|--------------------------------------------------------------------------
+*/
+
+.hero-big-logo.has-public-logo {
+  background: transparent !important;
+
+  padding: 0 !important;
+
+  overflow: visible !important;
+}
+
+
+/*
+|--------------------------------------------------------------------------
+| CONTACT LOGO
+|--------------------------------------------------------------------------
+*/
+
+.contact-logo.has-public-logo {
+  background: transparent !important;
+
+  padding: 0 !important;
+
+  overflow: visible !important;
+}
+
+
+/*
+|--------------------------------------------------------------------------
+| LOGIN LOGO
+|--------------------------------------------------------------------------
+*/
+
+.login-main-logo.has-public-logo {
+  width: 110px !important;
+
+  height: 110px !important;
+
+  padding: 0 !important;
+
+  background: transparent !important;
+
+  border: none !important;
+
+  border-radius: 0 !important;
+
+  box-shadow: none !important;
+
+  overflow: visible !important;
+}
+
+
+.login-main-logo.has-public-logo
+.public-site-logo-image {
+  width: 110px !important;
+
+  height: 110px !important;
+
+  object-fit: contain !important;
+
+  object-position: center !important;
+
+  transform: none !important;
+}
+
+
+/*
+|--------------------------------------------------------------------------
+| PUBLIC GALLERY
+|--------------------------------------------------------------------------
+*/
+
+.gallery-card.has-public-media
+.gallery-public-overlay {
+  position: absolute;
+
+  left: 0;
+
+  right: 0;
+
+  bottom: 0;
+
+  z-index: 2;
+
+  padding: 18px;
+
+  color:
+    #ffffff;
+
+  background:
+    linear-gradient(
+      transparent,
+      rgba(
+        2,
+        15,
+        27,
+        0.9
+      )
+    );
+}
+
+
+.gallery-public-overlay {
+  display: flex;
+
+  flex-direction: column;
+}
+
+
+.gallery-public-overlay
+small {
+  font-size: 7px;
+
+  letter-spacing: 1.5px;
+
+  opacity: 0.7;
+}
+
+
+.gallery-public-overlay
+strong {
+  margin-top: 4px;
+
+  font-size: 16px;
+}
+
+
+/*
+|--------------------------------------------------------------------------
+| VIDEO
+|--------------------------------------------------------------------------
+*/
+
+.public-video-media {
+  width: 100%;
+
+  height: 100%;
+
+  min-height: 290px;
+
+  object-fit: cover;
+
+  background:
+    #041321;
+}
+
+
+/*
+|--------------------------------------------------------------------------
+| RESPONSIVE
+|--------------------------------------------------------------------------
+*/
+
+@media (
+  max-width: 900px
+) {
+  .public-cms-sticky-header {
+    position: relative;
+
+    top: auto;
+
+    margin:
+      -24px -24px 18px;
+
+    flex-direction: column;
+
+    align-items: flex-start;
+  }
+
+
+  .public-cms-heading {
+    width: 100%;
+
+    justify-content: space-between;
+  }
+
+
+  .public-cms-inline-media {
+    grid-template-columns: 1fr;
+  }
+
+
+  .public-cms-inline-preview {
+    width: 100%;
+
+    max-width: 430px;
+
+    height: 260px;
+  }
+
+
+  .public-cms-inline-preview
+  .ant-image-img {
+    height: 260px;
+  }
+}
+
+
+@media (
+  max-width: 700px
+) {
+  .public-cms-media-grid {
+    grid-template-columns: 1fr;
+  }
+
+
+  .public-cms-heading {
+    align-items: flex-start;
+
+    flex-direction: column;
+  }
+
+
+  .public-cms-inline-preview {
+    height: 220px;
+  }
+
+
+  .public-cms-inline-preview
+  .ant-image-img {
+    height: 220px;
+  }
+
+
+  .login-main-logo.has-public-logo {
+    width: 96px !important;
+
+    height: 96px !important;
+  }
+
+
+  .login-main-logo.has-public-logo
+  .public-site-logo-image {
+    width: 96px !important;
+
+    height: 96px !important;
+  }
+}
