@@ -166,25 +166,9 @@ async function runWithEmployeeSyncLock(
 */
 
 async function fetchAllMasterRows(fetcher, pageSize = 100) {
-  const safePageSize = Math.min(Math.max(Number(pageSize) || 100, 1), 100);
-  let page = 1;
-  let totalPages = 1;
+  const { apiPages } = require("./pagination");
   const rows = [];
-
-  do {
-    const response = await fetcher({ page, page_size: safePageSize });
-    const pageRows = normalizeApiRows(response);
-    rows.push(...pageRows);
-
-    const total = Number(response?.count) || Number(response?.data?.count) || 0;
-    totalPages = total > 0
-      ? Math.max(1, Math.ceil(total / safePageSize))
-      : (pageRows.length === safePageSize ? page + 1 : page);
-
-    if (pageRows.length === 0) break;
-    page += 1;
-  } while (page <= totalPages);
-
+  for await (const page of apiPages(fetcher, {}, pageSize)) rows.push(...page.rows);
   return rows;
 }
 
@@ -1795,22 +1779,16 @@ async function syncStaffEmployee(
 
         FROM staff
 
-        WHERE
-          employee_id
-          =
-          ?
-
-          AND
-
-          category_id = ?
-
-        ORDER BY id DESC
+        WHERE (zkteco_emp_id = ? OR employee_id = ?) AND category_id = ?
+        ORDER BY (zkteco_emp_id = ?) DESC, id DESC
 
         LIMIT 1
       `,
       [
+        employee.id ?? null,
         empCode,
         categoryId,
+        employee.id ?? null,
       ]
     );
 
@@ -1834,6 +1812,7 @@ async function syncStaffEmployee(
         UPDATE staff
 
         SET
+          employee_id = ?,
           first_name = ?,
           last_name = ?,
 
@@ -1863,6 +1842,7 @@ async function syncStaffEmployee(
         WHERE id = ?
       `,
       [
+        empCode,
         firstName,
         lastName,
 
@@ -2216,22 +2196,16 @@ async function syncTraineeEmployee(
 
         FROM trainees
 
-        WHERE
-          employee_id
-          =
-          ?
-
-          AND
-
-          course_id = ?
-
-        ORDER BY id DESC
+        WHERE (zkteco_emp_id = ? OR employee_id = ?) AND course_id = ?
+        ORDER BY (zkteco_emp_id = ?) DESC, id DESC
 
         LIMIT 1
       `,
       [
+        employee.id ?? null,
         empCode,
         courseId,
+        employee.id ?? null,
       ]
     );
 
@@ -2255,6 +2229,7 @@ async function syncTraineeEmployee(
         UPDATE trainees
 
         SET
+          employee_id = ?,
           first_name = ?,
           last_name = ?,
 
@@ -2279,6 +2254,7 @@ async function syncTraineeEmployee(
         WHERE id = ?
       `,
       [
+        empCode,
         firstName,
         lastName,
 
@@ -2980,6 +2956,7 @@ async function syncAllEmployeesUnlocked(
   const pages =
     [];
 
+  const seenEmployeePages = new Set();
   do {
     const connection =
       await pool.getConnection();
@@ -2998,6 +2975,9 @@ async function syncAllEmployeesUnlocked(
           response
         );
 
+      const signature = JSON.stringify(employees.map(item => item.id));
+      if (employees.length && seenEmployeePages.has(signature)) throw new Error("BioTime repeated an employee page.");
+      seenEmployeePages.add(signature);
       totalEmployees =
         Number(
           response?.count
@@ -3224,6 +3204,9 @@ async function syncAllEmployeesUnlocked(
         break;
       }
 
+      const seen = pages.reduce((sum, entry) => sum + entry.fetched, 0);
+      if (totalEmployees > 0 && seen < totalEmployees) totalPages = Math.max(totalPages, page + 1);
+      else if (!totalEmployees && employees.length && response?.next !== null) totalPages = page + 1;
       page +=
         1;
     } catch (error) {
@@ -3242,6 +3225,8 @@ async function syncAllEmployeesUnlocked(
     totalPages
   );
 
+  const received = pages.reduce((sum, entry) => sum + entry.fetched, 0);
+  if (totalEmployees > 0 && received < totalEmployees) throw new Error(`BioTime employee sync incomplete: ${received}/${totalEmployees}.`);
   return {
     total_zkbiotime_employees:
       totalEmployees,
@@ -3279,6 +3264,7 @@ async function syncAllEmployeesUnlocked(
 
     failed,
 
+    complete: failed === 0 && conflicts === 0 && !masterDataSync.error && !(masterDataSync.conflicts || []).length,
     master_data_sync:
       masterDataSync,
 

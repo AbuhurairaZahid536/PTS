@@ -1,3 +1,4 @@
+import { useBiometricSyncStatus } from "../utils/biometricSyncStatus";
 import {
   useCallback,
   useEffect,
@@ -116,6 +117,7 @@ function formatDateTime(
 
 
 export default function BiometricTransactions() {
+  const syncStatus = useBiometricSyncStatus();
   const {
     hasPermission,
   } =
@@ -716,11 +718,10 @@ export default function BiometricTransactions() {
 
 
       if (
-        selectedDate !==
-        today
+        selectedDate > today
       ) {
         message.info(
-          "Previous date ki transactions local database history se load hoti hain."
+          "Future dates cannot be synchronized."
         );
 
         return;
@@ -729,7 +730,7 @@ export default function BiometricTransactions() {
 
       Modal.confirm({
         title:
-          "Sync Current Date from ZKBioTime?",
+          "Reconcile Selected Date from ZKBioTime?",
 
         content: (
           <div>
@@ -745,15 +746,14 @@ export default function BiometricTransactions() {
             </p>
 
             <p>
-              Current date ki complete transactions
-              ZKBioTime se local database mein
-              re-sync hongi.
+              All transactions for the selected date will be re-read from BioTime.
+              Existing transaction IDs are updated without creating duplicates.
             </p>
           </div>
         ),
 
         okText:
-          "Sync Current Date",
+          "Sync Selected Date",
 
 
         async onOk() {
@@ -769,7 +769,7 @@ export default function BiometricTransactions() {
 
                 {
                   date:
-                    today,
+                    selectedDate,
                 },
 
                 {
@@ -1061,6 +1061,32 @@ export default function BiometricTransactions() {
   | TABLE
   |--------------------------------------------------------------------------
   */
+
+  const inspectReconciliation = async () => {
+    try {
+      const {data: response} = await api.get("/biometric/reconciliation", {params:{attendance_date:date?.format("YYYY-MM-DD")},timeout:120000});
+      const audit = response.data;
+      const issues = [
+        ["Missing from local mirror",audit.missing_local], ["Only in local mirror",audit.local_only],
+        ["Changed BioTime fields",audit.changed_fields], ["Not mapped to PTS",audit.unmapped],
+        ["Stale PTS mapping",audit.invalid_mappings], ["Duplicate mappings",audit.duplicate_mappings],
+        ["Transactions missing locally",audit.transactions.missing_local], ["Transactions only in local DB",audit.transactions.local_only],
+        ["Corrected transactions",audit.transactions.changed], ["Invalid upstream transactions",audit.transactions.invalid_source],
+      ].map(([issue,items]) => ({key:issue,issue,count:items.length,
+        examples:items.slice(0,10).map(item => typeof item === "string" ? item : item.emp_code || item.employee_id || item.id).join(", ")}));
+      Modal.info({title:audit.in_sync?"BioTime reconciliation: matched":"BioTime reconciliation: differences found",width:850,
+        content:<div><p>BioTime employees: {audit.counts.biotime} · Local mirror: {audit.counts.local_mirror} · PTS mappings: {audit.counts.current_mappings}</p>
+          <p>Transactions on {audit.transactions.date}: BioTime {audit.transactions.biotime} · Local {audit.transactions.local}</p>
+          <p>Failed transactions pending retry: {audit.failed_transactions.pending ?? "Queue not initialized"}</p>
+          <Table size="small" pagination={false} dataSource={issues} columns={[
+            {title:"Check",dataIndex:"issue"},{title:"Count",dataIndex:"count"},{title:"Example employee codes",dataIndex:"examples"},
+          ]}/>
+          {(audit.failed_transactions.rows || []).length > 0 && <Table size="small" pagination={false} rowKey="source_id" dataSource={audit.failed_transactions.rows} columns={[
+            {title:"Failed transaction",dataIndex:"source_id"},{title:"Failure reason",dataIndex:"error_text"},{title:"Attempts",dataIndex:"attempts"},
+          ]}/>}
+          <p>{audit.scope_note}</p></div>});
+    } catch(error) { message.error(error.response?.data?.error?.message || error.message || "BioTime reconciliation failed."); }
+  };
 
   const columns = [
     {
@@ -1407,7 +1433,8 @@ export default function BiometricTransactions() {
 
 
           {
-            canSync && (
+            canSync && (<>
+              <Button onClick={inspectReconciliation}>Check BioTime Reconciliation</Button>
               <Button
                 type="primary"
 
@@ -1420,15 +1447,16 @@ export default function BiometricTransactions() {
                 }
 
                 disabled={
-                  !isCurrentDate
+                  !date || date.isAfter(dayjs(), "day")
                 }
 
                 onClick={
                   handleSync
                 }
               >
-                Sync Current Date
+                Sync Selected Date
               </Button>
+</>
             )
           }
         </Space>
@@ -1436,7 +1464,7 @@ export default function BiometricTransactions() {
 
 
       <Alert
-        type="success"
+        type={syncStatus.issues.length ? "warning" : "info"}
 
         showIcon
 
@@ -1445,9 +1473,9 @@ export default function BiometricTransactions() {
             16,
         }}
 
-        message="Current Date Live Auto Sync Active"
+        message={syncStatus.issues.length ? "BioTime synchronization incomplete" : "BioTime synchronization"}
 
-        description="As long as the user remains logged into the portal, only the current date’s ZKBioTime transactions will automatically sync to the database in the background every 10 seconds. When a previous date is selected, the system will display historical data from the local database only."
+        description={syncStatus.issues.length ? syncStatus.issues.join(". ") : "The server pulls BioTime data independently of open browser sessions. Failed transactions stay queued for retry; late uploads are reconciled periodically. Use Check BioTime Reconciliation to inspect count and mapping differences."}
       />
 
 

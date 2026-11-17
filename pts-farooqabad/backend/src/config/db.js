@@ -18,6 +18,13 @@ const pool = mysql.createPool({
   queueLimit: 0,
   dateStrings: ["DATE", "DATETIME"],
   namedPlaceholders: true,
+  timezone: '+05:00',
+});
+
+pool.on('connection', (connection) => {
+  connection.query("SET time_zone = '+05:00'", (error) => {
+    if (error) { logger.error({err:error}, 'Could not set PTS database timezone'); connection.destroy(); }
+  });
 });
 
 /**

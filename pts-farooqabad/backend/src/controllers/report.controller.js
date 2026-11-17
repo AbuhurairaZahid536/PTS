@@ -621,7 +621,7 @@ async function exportAttendanceReport(
       } Attendance Report`;
 
     worksheet.mergeCells(
-      "A1:J1"
+      "A1:P1"
     );
 
     worksheet.getCell(
@@ -655,7 +655,7 @@ async function exportAttendanceReport(
       25;
 
     worksheet.mergeCells(
-      "A2:J2"
+      "A2:P2"
     );
 
     worksheet.getCell(
@@ -684,7 +684,7 @@ async function exportAttendanceReport(
     };
 
     worksheet.mergeCells(
-      "A3:J3"
+      "A3:P3"
     );
 
     worksheet.getCell(
@@ -738,7 +738,7 @@ async function exportAttendanceReport(
 
       "Exemption",
 
-      "Manual Absence",
+      "Manual Absence", "Reason", "OSD Starts", "OSD Ends", "Absent From", "Absent Until / Return", "Absent Duration (seconds)",
     ];
 
     headerRow.font = {
@@ -797,6 +797,7 @@ async function exportAttendanceReport(
       20,
     ];
 
+    widths.push(32,24,24,24,24,24);
     widths.forEach(
       (
         width,
@@ -909,6 +910,10 @@ async function exportAttendanceReport(
             1
               ? "Recorded"
               : "-",
+            row.repatriate_reason || row.osd_reason || row.exemption_description || "-",
+            excelDate(row.osd_start_datetime),excelDate(row.osd_end_datetime),excelDate(row.absence_start),
+            row.absence_end ? excelDate(row.absence_end) : row.absence_start ? "Ongoing at report time" : "-",
+            row.absence_duration_seconds == null ? "-" : Number(row.absence_duration_seconds),
           ]);
 
         dataRow.alignment = {
@@ -1012,7 +1017,7 @@ async function exportAttendanceReport(
         "A5",
 
       to:
-        "J5",
+        "P5",
     };
 
     /*

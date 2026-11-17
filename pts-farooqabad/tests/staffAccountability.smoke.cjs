@@ -35,7 +35,7 @@ const pass=(label)=>{done++;console.log('PASS',label)};
  assert.equal(context.classify({subject_type:'STAFF',attendance_status:'NO_TIMETABLE'}),'No Timetable');pass('No Timetable is not a fabricated Present or Absent');
  assert.equal(context.classify({subject_type:'STAFF',attendance_status:'PENDING'}),'Not Processed');pass('Pending processing remains separately visible');
  assert.equal(context.classify({subject_type:'STAFF',attendance_status:'DUTY',timing_status:'NO_TIMETABLE'}),'Duty');pass('Valid duty assignment takes precedence over standard timetable');
- assert.equal(context.classify({subject_type:'TRAINEE',attendance_status:'NO_TIMETABLE'}),null);pass('Trainee attendance classifications remain unchanged');
+ assert.equal(context.classify({subject_type:'TRAINEE',attendance_status:'NO_TIMETABLE'}),'No Timetable');pass('Trainees without a timetable remain explicitly accounted for');
  assert.ok(dash.includes('summaryCounts["No Timetable"]')&&dash.includes('View Names & Belt Nos.')&&dash.includes('Assign staff timetable / duty shift'));pass('Missing timetable banner and clickable action popup wired');
  assert.ok(dash.includes('Assigned Duty / Shift')&&dash.includes('staffDutyDescription(assignment)'));pass('Duty popup retains real roster/custom shift/point/time details');
  assert.ok(dash.includes('rosterById')&&dash.includes('staff_belt_no')&&dash.includes('title: "Belt No."'));pass('Duty and all Dashboard Staff popups enrich belt from master roster');

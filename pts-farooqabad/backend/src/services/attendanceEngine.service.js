@@ -1928,7 +1928,7 @@ function processSession({
 |--------------------------------------------------------------------------
 */
 
-async function processAttendanceDate({
+async function processAttendanceDateUnlocked({
   attendanceDate,
   subjectType = null,
 }) {
@@ -2620,6 +2620,11 @@ async function processAttendanceDate({
     startedAt;
 
   return summary;
+}
+
+function processAttendanceDate(args) {
+  const { runExclusive } = require("../integrations/zkbiotime/syncCoordinator");
+  return runExclusive("attendance-recalculation", () => processAttendanceDateUnlocked(args));
 }
 
 module.exports = {

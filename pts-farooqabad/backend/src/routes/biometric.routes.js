@@ -50,6 +50,14 @@ router.use(
 );
 
 
+router.get("/reconciliation", requirePermission("biometric.sync"), async (req,res,next) => {
+  try {
+    const { auditBiometricReconciliation } = require("../services/biometricReconciliation.service");
+    res.set("Cache-Control","no-store");
+    res.json({success:true,data:await auditBiometricReconciliation(req.query.attendance_date)});
+  } catch(error) { next(error); }
+});
+
 /*
 |--------------------------------------------------------------------------
 | EMPLOYEE MASTER SYNC

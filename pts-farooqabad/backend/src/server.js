@@ -1,6 +1,7 @@
 const http = require("http");
 
 const app = require("./app");
+const { startBiometricSyncScheduler, stopBiometricSyncScheduler } = require("./jobs/biometricSync.job");
 const config = require("./config/env");
 const logger = require("./utils/logger");
 
@@ -121,6 +122,13 @@ async function runAutomaticAttendance() {
       "Automatic attendance processing started."
     );
 
+    // A failed/incomplete upstream fetch must not manufacture fresh absence.
+    const { runLiveTransactionSync } = require("./controllers/biometric.controller");
+    const sourceSync = await runLiveTransactionSync();
+    if (sourceSync.failed || sourceSync.complete === false) {
+      logger.warn({failed:sourceSync.failed}, "Attendance deferred until BioTime transaction reconciliation completes");
+      return;
+    }
     const result =
       await processAttendanceDate({
         attendanceDate,
@@ -435,6 +443,7 @@ server.listen(
       |--------------------------------------------------------------------------
       */
 
+      startBiometricSyncScheduler();
       startAutomaticAttendanceScheduler();
 
       /*
@@ -504,6 +513,7 @@ function shutdown(
     "Server shutdown requested."
   );
 
+  stopBiometricSyncScheduler();
   stopAutomaticAttendanceScheduler();
 
   stopCourseLifecycleScheduler();

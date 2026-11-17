@@ -1,3 +1,5 @@
+// All PTS timetable and biometric wall-clock dates use Pakistan time.
+process.env.TZ = "Asia/Karachi";
 const express =
   require("express");
 

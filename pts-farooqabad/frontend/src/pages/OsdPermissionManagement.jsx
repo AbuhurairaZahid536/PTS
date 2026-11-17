@@ -740,22 +740,8 @@ export default function OsdPermissionManagement({
         ),
       },
 
-      {
-        title: "Period",
-
-        width: 235,
-
-        render: (_, record) => (
-          <div>
-            <div>{formatDateTime(record.start_datetime)}</div>
-
-            <Text type="secondary">
-              to {formatDateTime(record.end_datetime)}
-            </Text>
-          </div>
-        ),
-      },
-
+      { title: "Starting Date / Time", dataIndex: "start_datetime", width: 210, render: formatDateTime },
+      { title: "Ending Date / Time", dataIndex: "end_datetime", width: 210, render: formatDateTime },
       {
         title: "Reason",
 

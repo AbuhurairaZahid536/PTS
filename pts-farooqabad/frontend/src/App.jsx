@@ -1,3 +1,4 @@
+import { publishBiometricSyncStatus } from "./utils/biometricSyncStatus";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import {
@@ -834,8 +835,10 @@ export default function App({ brandLogoUrl = "" }) {
       );
 
       const syncData = response.data?.data || {};
+      publishBiometricSyncStatus("employees", {ok:response.data?.success !== false && syncData.complete !== false,
+        message:response.data?.message || "Employee reconciliation incomplete"});
 
-      if (currentAccessToken) {
+      if (currentAccessToken && response.data?.success !== false && syncData.complete !== false) {
         sessionStorage.setItem(
           EMPLOYEE_MASTER_SYNC_SESSION_KEY,
           currentAccessToken,
@@ -857,6 +860,7 @@ export default function App({ brandLogoUrl = "" }) {
         );
       }
     } catch (error) {
+      publishBiometricSyncStatus("employees", {ok:false,message:error.response?.data?.error?.message || error.message});
       console.error(
         "ZKBioTime employee master sync failed:",
         error.response?.data?.message || error.message,
@@ -913,6 +917,8 @@ export default function App({ brandLogoUrl = "" }) {
       const response = await api.post("/biometric/transactions/live-sync");
 
       const syncData = response.data?.data || {};
+      publishBiometricSyncStatus("transactions", {ok:response.data?.success !== false && syncData.complete !== false,
+        message:syncData.failed ? `${syncData.failed} transaction(s) awaiting retry` : response.data?.message});
 
       if (response.data?.success !== false) {
         window.dispatchEvent(
@@ -922,6 +928,7 @@ export default function App({ brandLogoUrl = "" }) {
         );
       }
     } catch (error) {
+      publishBiometricSyncStatus("transactions", {ok:false,message:error.response?.data?.error?.message || error.message});
       console.error(
         "Background ZKBioTime transaction sync failed:",
         error.response?.data?.message || error.message,

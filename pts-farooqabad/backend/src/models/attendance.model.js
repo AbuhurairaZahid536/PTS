@@ -1,3 +1,4 @@
+const { effectiveAttendanceStatus } = require("./attendanceStatus.sql");
 const {
   pool,
 } = require("../config/db");
@@ -1631,7 +1632,7 @@ async function getAttendanceRecords({
 
   if (status) {
     conditions.push(
-      "ar.attendance_status = :status"
+      `${effectiveAttendanceStatus} = :status`
     );
 
     params.status =
@@ -1738,6 +1739,9 @@ async function getAttendanceRecords({
       `
         SELECT
           ar.*,
+          ${effectiveAttendanceStatus} AS attendance_status,
+          CASE WHEN ar.subject_type='TRAINEE' THEN COALESCE(NULLIF(t.zkteco_emp_code,''),t.employee_id)
+            ELSE COALESCE(NULLIF(s.zkteco_emp_code,''),s.employee_id) END AS employee_id,
 
           COALESCE(
             NULLIF(
@@ -1933,7 +1937,7 @@ async function getSummary(
 
             COALESCE(
               SUM(
-                ar.attendance_status =
+                ${effectiveAttendanceStatus} =
                 'PRESENT'
               ),
               0
@@ -1941,7 +1945,7 @@ async function getSummary(
 
             COALESCE(
               SUM(
-                ar.attendance_status =
+                ${effectiveAttendanceStatus} =
                 'ABSENT'
               ),
               0
@@ -1949,7 +1953,7 @@ async function getSummary(
 
             COALESCE(
               SUM(
-                ar.attendance_status =
+                ${effectiveAttendanceStatus} =
                 'EXEMPT'
               ),
               0
@@ -1957,11 +1961,12 @@ async function getSummary(
 
             COALESCE(
               SUM(
-                ar.attendance_status =
+                ${effectiveAttendanceStatus} =
                 'NO_TIMETABLE'
               ),
               0
             ) AS no_timetable,
+            SUM(${effectiveAttendanceStatus}='PENDING') AS pending,
 
             COALESCE(
               SUM(
@@ -2013,7 +2018,7 @@ async function getSummary(
 
             COALESCE(
               SUM(
-                ar.attendance_status =
+                ${effectiveAttendanceStatus} =
                 'PRESENT'
               ),
               0
@@ -2021,7 +2026,7 @@ async function getSummary(
 
             COALESCE(
               SUM(
-                ar.attendance_status =
+                ${effectiveAttendanceStatus} =
                 'ABSENT'
               ),
               0
@@ -2029,7 +2034,7 @@ async function getSummary(
 
             COALESCE(
               SUM(
-                ar.attendance_status =
+                ${effectiveAttendanceStatus} =
                 'EXEMPT'
               ),
               0
@@ -2037,11 +2042,12 @@ async function getSummary(
 
             COALESCE(
               SUM(
-                ar.attendance_status =
+                ${effectiveAttendanceStatus} =
                 'NO_TIMETABLE'
               ),
               0
             ) AS no_timetable,
+            SUM(${effectiveAttendanceStatus}='PENDING') AS pending,
 
             COALESCE(
               SUM(
@@ -2162,6 +2168,7 @@ async function getSummary(
         0
       ),
 
+    pending: Number(overall.pending || 0),
     sessions:
       sessionResult[0].map(
         (row) => ({

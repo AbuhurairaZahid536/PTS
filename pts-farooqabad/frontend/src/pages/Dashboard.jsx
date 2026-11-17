@@ -1,3 +1,4 @@
+import { useBiometricSyncStatus } from "../utils/biometricSyncStatus";
 import {
   useCallback,
   useEffect,
@@ -7,6 +8,7 @@ import {
 } from "react";
 
 import {
+  Alert,
   Button,
   Card,
   Checkbox,
@@ -47,6 +49,7 @@ import {
 import dayjs from "dayjs";
 
 import api from "../services/api";
+import { employeeCode, activeRepatriates, repatriateMatches, formatAbsenceDuration, pakistanNow } from "../utils/dashboardRecords";
 import { collectStaffDutyAssignments, reconcileStaffCategoryDuty } from "../utils/staffDashboardDuty";
 import { useAuth } from "../contexts/AuthContext";
 
@@ -55,7 +58,7 @@ const { Title, Text } = Typography;
 const PAGE_SIZE = 500;
 
 const DASHBOARD_CACHE_PREFIX =
-  "pts_dashboard_snapshot_v2_";
+  "pts_dashboard_snapshot_v3_";
 
 const DASHBOARD_RETRY_DELAY_MS =
   900;
@@ -162,6 +165,8 @@ function readDashboardSnapshot({
       traineeEvening,
       staffMorning,
       staffEvening,
+      supportingData: parsed.supportingData || {},
+      traineeRoster: parsed.traineeRoster || [],
     };
   } catch {
     return null;
@@ -175,6 +180,8 @@ function saveDashboardSnapshot({
   traineeEvening,
   staffMorning,
   staffEvening,
+  supportingData,
+  traineeRoster,
 }) {
   try {
     const storageKey =
@@ -194,6 +201,8 @@ function saveDashboardSnapshot({
         traineeEvening,
         staffMorning,
         staffEvening,
+        supportingData,
+        traineeRoster,
       });
 
     /*
@@ -324,7 +333,7 @@ const DASHBOARD_HIDDEN_PREFIX =
 |--------------------------------------------------------------------------
 |
 | NOTE:
-| Current backend remains unchanged as requested.
+| BioTime owns biometric identities/punches; PTS owns operational records.
 | Long Weekend is overlaid from the Weekend Management API.
 | Medical Rest card is sourced directly from Outdoor / Medical records
 | because Medical Rest is operational and is not a biometric exemption.
@@ -396,6 +405,10 @@ function staffDutyDescription(assignment) {
   return [assignment.group_name, assignment.shift_name, assignment.duty_point_name,
     assignment.start_time && assignment.end_time
       ? `${assignment.start_time} – ${assignment.end_time}` : null].filter(Boolean).join(" • ");
+}
+
+function traineeStatusNames(rows) {
+  return [...STATUS_NAMES, ...["No Timetable", "Not Processed"].filter(name => (rows || []).some(row => rowStatusName(row) === name))];
 }
 
 function dashboardStatusLabel(
@@ -629,6 +642,10 @@ function manualAbsenceText(row) {
 */
 
 function rowStatusName(row) {
+  if (["NOT_PROCESSED", "PENDING"].includes(normalize(row?.attendance_status))) {
+    return normalize(row?.timing_status) === "NO_TIMETABLE" ? "No Timetable" : "Not Processed";
+  }
+  if (normalize(row?.attendance_status) === "NO_TIMETABLE") return "No Timetable";
   if (normalize(row?.subject_type) === "STAFF") {
     const attendance = normalize(row?.attendance_status);
     if (row?._dashboard_duty || attendance === "DUTY") return "Duty";
@@ -775,7 +792,7 @@ function isCompletedCourse(record) {
     return false;
   }
 
-  const today = dayjs().format("YYYY-MM-DD");
+  const today = pakistanNow().slice(0,10);
 
   // Match the backend course-status rule: a course is COMPLETED
   // as soon as today's date is later than its configured end date.
@@ -789,35 +806,16 @@ function filterCompletedCourseRows(rows) {
 }
 
 function traineeRosterDashboardRow(record) {
-  const status = normalize(record?.status);
-
-  let attendanceStatus = "ABSENT";
-  let timingStatus = "NO_PUNCH";
-  let exemptionType = null;
-  let exemptionDescription = null;
-
-  if (status === "ON_LEAVE") {
-    attendanceStatus = "EXEMPT";
-    timingStatus = "EXEMPT";
-    exemptionType = "LEAVE";
-    exemptionDescription = "Leave";
-  } else if (status === "OSD") {
-    attendanceStatus = "EXEMPT";
-    timingStatus = "EXEMPT";
-    exemptionType = "OSD";
-    exemptionDescription = "OSD";
-  } else if (status === "TRAINING_DROP") {
-    attendanceStatus = "EXEMPT";
-    timingStatus = "EXEMPT";
-    exemptionType = "TRAINING_DROP_REPATRIATE";
-    exemptionDescription = "Repatriate";
-  }
-
+  const attendanceStatus = "NOT_PROCESSED";
+  const timingStatus = "NOT_PROCESSED";
+  const exemptionType = null;
+  const exemptionDescription = null;
   return {
     subject_type: "TRAINEE",
     subject_id: record.id,
     trainee_id: record.id,
-    employee_id: record.employee_id,
+    employee_id: employeeCode(record),
+    biotime_emp_code: record.biotime_emp_code || record.zkteco_emp_code || null,
     subject_name:
       [record.first_name, record.last_name]
         .filter(Boolean)
@@ -844,7 +842,8 @@ function traineeRosterDashboardRow(record) {
 function mergeTraineeRosterIntoRows(rows, roster) {
   const map = new Map();
 
-  filterCompletedCourseRows(rows).forEach((row) => {
+  const allowedIds = new Set(filterCompletedCourseRows(roster).map(record => String(record.id)));
+  filterCompletedCourseRows(rows).filter(row => allowedIds.has(String(row.subject_id))).forEach((row) => {
     const key = identityKey(row);
 
     if (key) {
@@ -872,6 +871,8 @@ function mergeTraineeRosterIntoRows(rows, roster) {
     map.set(key, {
       ...traineeRosterDashboardRow(record),
       ...existing,
+      employee_id: employeeCode(record),
+      biotime_emp_code: record.biotime_emp_code || record.zkteco_emp_code || existing.biotime_emp_code,
       course_id:
         existing.course_id ??
         record.course_id ??
@@ -948,18 +949,7 @@ function repatriateMatchesRow(
   record,
   row
 ) {
-  const recordKeys =
-    new Set(
-      repatriateRecordKeys(
-        record
-      )
-    );
-
-  return rowIdentityKeys(
-    row
-  ).some((key) =>
-    recordKeys.has(key)
-  );
+  return repatriateMatches(record, row);
 }
 
 function applyRepatriatesToRows(
@@ -1020,6 +1010,9 @@ function applyRepatriatesToRows(
           match.reason ||
           "Repatriate",
 
+        selected_punch: null,
+        transaction_id: null,
+        repatriate_reason: match.reason || null,
         repatriate_drop_id:
           match.id ||
           null,
@@ -1128,6 +1121,7 @@ function applyRepatriatesToRows(
         transaction_id:
           null,
 
+        repatriate_reason: record.reason || null,
         repatriate_drop_id:
           record.id ||
           null,
@@ -3069,7 +3063,7 @@ function GroupPieCard({
             subjectType ===
             "STAFF"
               ? staffStatusNames(statement.rows)
-              : STATUS_NAMES
+              : traineeStatusNames(statement.rows)
           }
           subjectType={subjectType}
         />
@@ -3094,7 +3088,7 @@ function StatementTable({
   const statementStatusNames =
     subjectType === "STAFF"
       ? staffStatusNames(rows.flatMap((statement) => statement.rows || []))
-      : STATUS_NAMES;
+      : traineeStatusNames(rows.flatMap((statement) => statement.rows || []));
 
   const columns = [
     {
@@ -3454,7 +3448,7 @@ function SessionSection({
   const sectionStatusNames =
     subjectType === "STAFF"
       ? staffStatusNames(rows)
-      : STATUS_NAMES;
+      : traineeStatusNames(rows);
 
   const sessionOpen =
     sessionState?.open !== false;
@@ -4577,17 +4571,19 @@ function AttendanceWindows({
 */
 
 export default function Dashboard() {
+  const syncStatus = useBiometricSyncStatus();
+  const [dashboardError,setDashboardError] = useState("");
   const { user } = useAuth();
 
   const [selectedDate, setSelectedDate] =
-    useState(dayjs());
+    useState(() => dayjs(pakistanNow()));
 
   const [dashboardClock, setDashboardClock] =
-    useState(dayjs());
+    useState(() => dayjs(pakistanNow()));
 
   useEffect(() => {
     const timerId = setInterval(() => {
-      setDashboardClock(dayjs());
+      setDashboardClock(dayjs(pakistanNow()));
     }, 1000);
 
     return () =>
@@ -4734,624 +4730,67 @@ export default function Dashboard() {
       [user]
     );
 
-  const requestAttendancePage =
-    useCallback(
-      async (params) => {
-        try {
-          return await api.get(
-            "/reports/attendance",
-            {
-              params,
-              timeout: 45000,
-            }
-          );
-        } catch (error) {
-          const status =
-            error.response?.status;
-
-          const retryable =
-            !status ||
-            status === 408 ||
-            status === 429 ||
-            status >= 500;
-
-          if (!retryable) {
-            throw error;
-          }
-
-          await dashboardSleep(
-            DASHBOARD_RETRY_DELAY_MS
-          );
-
-          return api.get(
-            "/reports/attendance",
-            {
-              params,
-              timeout: 45000,
-            }
-          );
-        }
-      },
-      []
-    );
-
-  const loadReportRows =
-    useCallback(
-      async (
-        subjectType,
-        sessionType,
-        date
-      ) => {
-        const first =
-          await requestAttendancePage({
-            attendance_date:
-              date,
-            subject_type:
-              subjectType,
-            session_type:
-              sessionType,
-            page: 1,
-            page_size:
-              PAGE_SIZE,
-          });
-
-        const firstData =
-          first.data?.data || {};
-
-        const rows = [
-          ...(firstData.rows || []),
-        ];
-
-        const total =
-          Number(
-            firstData.pagination
-              ?.total ||
-              rows.length
-          );
-
-        const pages =
-          Math.ceil(
-            total / PAGE_SIZE
-          );
-
-        for (
-          let page = 2;
-          page <= pages;
-          page += 1
-        ) {
-          const response =
-            await requestAttendancePage({
-              attendance_date:
-                date,
-              subject_type:
-                subjectType,
-              session_type:
-                sessionType,
-              page,
-              page_size:
-                PAGE_SIZE,
-            });
-
-          rows.push(
-            ...(
-              response.data?.data
-                ?.rows || []
-            )
-          );
-        }
-
-        return {
-          rows,
-          total,
-        };
-      },
-      [requestAttendancePage]
-    );
-
-  const loadRepatriateRows =
-    useCallback(
-      async (date) => {
-        try {
-          const response =
-            await api.get(
-              "/training-drops",
-              {
-                timeout: 30000,
-              }
-            );
-
-          const rows =
-            response.data?.data ||
-            [];
-
-          if (
-            !Array.isArray(
-              rows
-            )
-          ) {
-            return [];
-          }
-
-          const selectedDay =
-            dayjs(date);
-
-          const now =
-            dayjs();
-
-          /*
-          |--------------------------------------------------------------------------
-          | AS-OF MOMENT
-          |--------------------------------------------------------------------------
-          |
-          | Current date: only records already effective at the current moment.
-          | Previous date: state at the end of that selected day.
-          |
-          |--------------------------------------------------------------------------
-          */
-
-          const asOf =
-            selectedDay.isSame(
-              now,
-              "day"
-            )
-              ? now
-              : selectedDay.endOf(
-                  "day"
-                );
-
-          return rows.filter(
-            (record) => {
-              const status =
-                normalize(
-                  record.drop_status ||
-                    record.workflow_status ||
-                    record.status
-                );
-
-              const dropValue =
-                record.drop_datetime ||
-                record.start_datetime ||
-                record.created_at ||
-                null;
-
-              if (!dropValue) {
-                return false;
-              }
-
-              const drop =
-                dayjs(
-                  dropValue
-                );
-
-              if (
-                !drop.isValid() ||
-                drop.valueOf() >
-                  asOf.valueOf()
-              ) {
-                return false;
-              }
-
-              /*
-              |--------------------------------------------------------------------------
-              | CANCELLED
-              |--------------------------------------------------------------------------
-              |
-              | For historical dates, a later cancellation must not erase the
-              | fact that the trainee was repatriated before cancellation.
-              |
-              |--------------------------------------------------------------------------
-              */
-
-              if (
-                status ===
-                "CANCELLED"
-              ) {
-                const cancelledAt =
-                  record.cancelled_at
-                    ? dayjs(
-                        record.cancelled_at
-                      )
-                    : null;
-
-                if (
-                  !cancelledAt ||
-                  !cancelledAt.isValid() ||
-                  cancelledAt.valueOf() <=
-                    asOf.valueOf()
-                ) {
-                  return false;
-                }
-              }
-
-              /*
-              |--------------------------------------------------------------------------
-              | REJOINED
-              |--------------------------------------------------------------------------
-              */
-
-              const rejoinValue =
-                record.rejoin_datetime ||
-                record.end_datetime ||
-                null;
-
-              if (rejoinValue) {
-                const rejoin =
-                  dayjs(
-                    rejoinValue
-                  );
-
-                if (
-                  rejoin.isValid() &&
-                  rejoin.valueOf() <=
-                    asOf.valueOf()
-                ) {
-                  return false;
-                }
-              } else if (
-                status ===
-                "REJOINED"
-              ) {
-                return false;
-              }
-
-              return true;
-            }
-          );
-        } catch (error) {
-          console.error(
-            "Dashboard Repatriate data could not be loaded:",
-            error
-          );
-
-          return [];
-        }
-      },
-      []
-    );
-
-  const loadWeekendRows =
-    useCallback(
-      async () => {
-        try {
-          const response =
-            await api.get(
-              "/weekends",
-              {
-                timeout: 30000,
-              }
-            );
-
-          const rows =
-            response.data?.data ||
-            [];
-
-          return Array.isArray(
-            rows
-          )
-            ? rows
-            : [];
-        } catch (error) {
-          console.error(
-            "Dashboard Long Weekend data could not be loaded:",
-            error
-          );
-
-          return [];
-        }
-      },
-      []
-    );
-
-
-  const loadTraineeRoster =
-    useCallback(
-      async () => {
-        try {
-          const response =
-            await api.get(
-              "/dashboard/trainees",
-              {
-                timeout: 45000,
-              }
-            );
-
-          const rows =
-            response.data?.data ||
-            [];
-
-          return Array.isArray(rows)
-            ? rows
-            : [];
-        } catch (error) {
-          console.error(
-            "Dashboard All Trainee roster could not be loaded:",
-            error
-          );
-
-          return [];
-        }
-      },
-      []
-    );
-
-
-  const loadStaffRoster = useCallback(async () => {
-    const response = await api.get("/dashboard/staff", { timeout: 45000 });
-    if (!Array.isArray(response.data?.data)) throw new Error("Invalid Dashboard staff roster response.");
-    return response.data.data;
+  const requestSequence = useRef(0);
+  const requestedDateRef = useRef("");
+  requestedDateRef.current = selectedDate.format("YYYY-MM-DD");
+  const restoreSupport = useCallback((data, date) => {
+    setRepatriates(filterCompletedCourseRows(activeRepatriates(data.training_drops || [], date)));
+    setWeekends(data.weekends || []);
+    setTraineeMedicalRest(filterCompletedCourseRows(data.trainee_medical_rest || []));
+    setStaffMedicalRest(data.staff_medical_rest || []);
+    setShiftAttendanceRows(data.shift_attendance_rows || []);
   }, []);
-
-  const loadCustomShiftAttendanceRows = useCallback(async (date) => {
-    const response = await api.get("/custom-shifts/attendance-summary", {
-      params: { attendance_date: date }, timeout: 45000,
-    });
-    if (!Array.isArray(response.data?.data?.rows)) throw new Error("Invalid Dashboard custom shift response.");
-    return response.data.data.rows;
-  }, []);
-
-  const loadShiftAttendanceRows =
-    useCallback(
-      async (
-        date
-      ) => {
-        try {
-          const response =
-            await api.get(
-              "/duty-rosters/attendance-summary",
-              {
-                params: {
-                  attendance_date:
-                    date,
-                },
-
-                timeout:
-                  30000,
-              }
-            );
-
-          const rows =
-            response.data
-              ?.data
-              ?.rows ||
-            [];
-
-          return Array.isArray(
-            rows
-          )
-            ? rows
-            : [];
-        } catch (error) {
-          console.error(
-            "Dashboard Shift Duty attendance could not be loaded:",
-            error
-          );
-          throw error;
-        }
-      },
-      []
-    );
-
-
-  const loadMedicalRestRows =
-    useCallback(
-      async (
-        subjectType
-      ) => {
-        try {
-          const response =
-            await api.get(
-              "/outdoor",
-              {
-                params: {
-                  subject_type:
-                    subjectType,
-
-                  medical_rest_only:
-                    1,
-                },
-
-                timeout:
-                  30000,
-              }
-            );
-
-          const rows =
-            response.data?.data ||
-            [];
-
-          return Array.isArray(
-            rows
-          )
-            ? rows
-            : [];
-        } catch (error) {
-          console.error(
-            `Dashboard ${subjectType} Medical Rest data could not be loaded:`,
-            error
-          );
-
-          return [];
-        }
-      },
-      []
-    );
-
-
-  const loadDashboard =
-    useCallback(
-      async () => {
-        if (
-          loadingRef.current
-        ) {
-          return;
-        }
-
-        loadingRef.current =
-          true;
-        setLoading(true);
-
-        const date =
-          selectedDate.format(
-            "YYYY-MM-DD"
-          );
-
-        try {
-          const [
-            tm,
-            te,
-            sm,
-            se,
-            repatriateRows,
-            weekendRows,
-            traineeRosterRows,
-            traineeMedicalRows,
-            staffMedicalRows,
-            shiftDutyRows,
-            staffRosterRows,
-            customShiftRows,
-          ] = await Promise.all([
-            loadReportRows(
-              "TRAINEE",
-              "MORNING",
-              date
-            ),
-            loadReportRows(
-              "TRAINEE",
-              "EVENING",
-              date
-            ),
-            loadReportRows(
-              "STAFF",
-              "MORNING",
-              date
-            ),
-            loadReportRows(
-              "STAFF",
-              "EVENING",
-              date
-            ),
-            loadRepatriateRows(
-              date
-            ),
-            loadWeekendRows(),
-            loadTraineeRoster(),
-            loadMedicalRestRows(
-              "TRAINEE"
-            ),
-            loadMedicalRestRows(
-              "STAFF"
-            ),
-            loadShiftAttendanceRows(
-              date
-            ),
-            loadStaffRoster(),
-            loadCustomShiftAttendanceRows(date),
-          ]);
-
-          const dutyAssignmentsByStaffId = collectStaffDutyAssignments(shiftDutyRows, customShiftRows);
-          const shiftDutyStaffIds = new Set(dutyAssignmentsByStaffId.keys());
-          const reconcileStaffSession = (report, sessionType) => {
-            const rows = reconcileStaffCategoryDuty({
-              roster: staffRosterRows, rows: report.rows,
-              dutyIds: shiftDutyStaffIds, dutyAssignmentsByStaffId,
-            }).map((row) => ({ ...row, attendance_date: date, session_type: sessionType }));
-            return { rows, total: rows.length };
-          };
-          const staffMorningData = reconcileStaffSession(sm, "MORNING");
-          const staffEveningData = reconcileStaffSession(se, "EVENING");
-
-          setTraineeMorning(tm);
-          setTraineeEvening(te);
-          setStaffMorning(staffMorningData);
-          setStaffEvening(staffEveningData);
-          setRepatriates(
-            filterCompletedCourseRows(
-              repatriateRows
-            )
-          );
-
-          setWeekends(
-            weekendRows
-          );
-
-          setTraineeRoster(
-            filterCompletedCourseRows(
-              traineeRosterRows
-            )
-          );
-
-          setTraineeMedicalRest(
-            filterCompletedCourseRows(
-              traineeMedicalRows
-            )
-          );
-
-          setStaffMedicalRest(
-            staffMedicalRows
-          );
-
-          setShiftAttendanceRows(
-            shiftDutyRows
-          );
-
-          saveDashboardSnapshot({
-            user,
-            date,
-            traineeMorning: tm,
-            traineeEvening: te,
-            staffMorning: staffMorningData,
-            staffEvening: staffEveningData,
-          });
-        } catch (error) {
-          const cached =
-            readDashboardSnapshot({
-              user,
-              date,
-            });
-
-          if (cached) {
-            setTraineeMorning(
-              cached.traineeMorning
-            );
-            setTraineeEvening(
-              cached.traineeEvening
-            );
-            setStaffMorning(
-              cached.staffMorning
-            );
-            setStaffEvening(
-              cached.staffEvening
-            );
-
-            message.warning(
-              "Latest Dashboard data could not be loaded. Showing the last available data."
-            );
-          } else {
-            message.error(
-              error.response?.data
-                ?.message ||
-                "Could not load Dashboard."
-            );
-          }
-        } finally {
-          loadingRef.current =
-            false;
-          setLoading(false);
-        }
-      },
-      [
-        selectedDate,
-        loadReportRows,
-        loadRepatriateRows,
-        loadWeekendRows,
-        loadTraineeRoster,
-        loadMedicalRestRows,
-        loadShiftAttendanceRows,
-        loadStaffRoster,
-        loadCustomShiftAttendanceRows,
-        user,
-      ]
-    );
+  const loadDashboard = useCallback(async () => {
+    const date = selectedDate.format("YYYY-MM-DD");
+    if (loadingRef.current === date) return;
+    const sequence = ++requestSequence.current;
+    loadingRef.current = date;
+    setLoading(true);
+    try {
+      const response = await api.get("/dashboard/snapshot", {
+        params: { attendance_date: date, include_support: 1 }, timeout: 120000,
+      });
+      const snapshot = response.data?.data;
+      if (!snapshot || !snapshot.supporting_data) throw new Error("Dashboard snapshot is incomplete.");
+      if (sequence !== requestSequence.current || requestedDateRef.current !== date) return;
+      setDashboardError("");
+      const support = snapshot.supporting_data;
+      const dutyAssignmentsByStaffId = collectStaffDutyAssignments(support.shift_attendance_rows, support.custom_shift_rows);
+      const shiftDutyStaffIds = new Set(dutyAssignmentsByStaffId.keys());
+      const reconcileStaffSession = (report, sessionType) => {
+        const rows = reconcileStaffCategoryDuty({
+          roster: snapshot.staff_roster, rows: report.rows,
+          dutyIds: shiftDutyStaffIds, dutyAssignmentsByStaffId,
+        }).map(row => ({...row, attendance_date: date, session_type: sessionType}));
+        return {rows,total:rows.length};
+      };
+      const staffMorningData = reconcileStaffSession(snapshot.staff_morning, "MORNING");
+      const staffEveningData = reconcileStaffSession(snapshot.staff_evening, "EVENING");
+      setTraineeMorning(snapshot.trainee_morning);
+      setTraineeEvening(snapshot.trainee_evening);
+      setStaffMorning(staffMorningData);
+      setStaffEvening(staffEveningData);
+      const roster = filterCompletedCourseRows(snapshot.trainee_roster);
+      setTraineeRoster(roster);
+      restoreSupport(support, date);
+      saveDashboardSnapshot({user,date,traineeMorning:snapshot.trainee_morning,traineeEvening:snapshot.trainee_evening,
+        staffMorning: staffMorningData,staffEvening: staffEveningData,supportingData:support,traineeRoster:roster});
+    } catch (error) {
+      if (sequence !== requestSequence.current || requestedDateRef.current !== date) return;
+      // Never mix an old operational overlay with fresh attendance or the wrong date.
+      const cached = readDashboardSnapshot({user,date});
+      if (cached) {
+        setTraineeMorning(cached.traineeMorning);setTraineeEvening(cached.traineeEvening);
+        setStaffMorning(cached.staffMorning);setStaffEvening(cached.staffEvening);
+        setTraineeRoster(cached.traineeRoster);restoreSupport(cached.supportingData,date);
+      }
+      setDashboardError(cached ? `Showing the last complete snapshot from ${cached.savedAt || date}. Refresh failed.` : "No complete dashboard data is available. Refresh failed.");
+      message.warning(cached ? "Dashboard update failed. Showing the last complete snapshot." :
+        (error.response?.data?.error?.message || error.message || "Dashboard data could not be loaded."));
+    } finally {
+      if (sequence === requestSequence.current) { loadingRef.current = null; setLoading(false); }
+    }
+  }, [selectedDate,user,restoreSupport]);
 
   useEffect(() => {
     const date =
@@ -5366,6 +4805,8 @@ export default function Dashboard() {
       });
 
     if (cached) {
+      setTraineeRoster(cached.traineeRoster);
+      restoreSupport(cached.supportingData,date);
       setTraineeMorning(
         cached.traineeMorning
       );
@@ -5379,6 +4820,8 @@ export default function Dashboard() {
         cached.staffEvening
       );
     } else {
+      setTraineeRoster([]);
+      restoreSupport({},date);
       setTraineeMorning(
         EMPTY_ATTENDANCE
       );
@@ -5398,6 +4841,7 @@ export default function Dashboard() {
     user,
     selectedDate,
     loadDashboard,
+    restoreSupport,
   ]);
 
   const traineeEveningSessionState =
@@ -5811,7 +5255,8 @@ export default function Dashboard() {
   const activeCardConfig =
     activeSubject === "STAFF"
       ? STAFF_CARD_CONFIG
-      : CARD_CONFIG;
+      : [...CARD_CONFIG, ...["No Timetable","Not Processed"].filter(name => summaryCounts[name] > 0)
+          .map(name => ({key:name,title:name,...STATUS_CONFIG[name],icon:<WarningOutlined />}))];
 
   const openList =
     (title, rows) => {
@@ -5877,13 +5322,18 @@ export default function Dashboard() {
           return `
             <tr>
               <td>${index + 1}</td>
-              <td>${esc(row.employee_id)}</td>
+              <td>${esc(employeeCode(row))}</td>
               <td>${esc(name)}</td>
               ${activeSubject === "STAFF" ? `<td>${esc(row.belt_no || "Not recorded")}</td><td>${esc((row.duty_assignments || []).map(staffDutyDescription).join("; ") || "—")}</td>` : ""}
               <td>${esc(group)}</td>
               <td>${esc(subGroup)}</td>
               <td>${esc(status)}</td>
               <td>${esc(row.attendance_status || "-")}</td>
+              <td>${esc(row.repatriate_reason || row.osd_reason || row.exemption_description || "—")}</td>
+              <td>${esc(formatDashboardDateTime(row.osd_start_datetime))}</td><td>${esc(formatDashboardDateTime(row.osd_end_datetime))}</td>
+              <td>${esc(formatDashboardDateTime(row.absence_start))}</td>
+              <td>${esc(row.absence_end ? formatDashboardDateTime(row.absence_end) : row.absence_start ? "Ongoing at report time" : "—")}</td>
+              <td>${esc(row.absence_start ? formatAbsenceDuration(row.absence_duration_seconds) : "—")}</td>
               <td>${esc(formatTime(row.selected_punch))}</td>
             </tr>
           `;
@@ -5964,7 +5414,8 @@ export default function Dashboard() {
                 <th>${activeSubject === "TRAINEE" ? "Course" : "Category"}</th>
                 <th>${activeSubject === "TRAINEE" ? "Platoon" : "Branch"}</th>
                 <th>Dashboard Status</th>
-                <th>Attendance</th>
+                <th>Attendance</th><th>Reason</th><th>OSD Starts</th><th>OSD Ends</th>
+                <th>Absent From</th><th>Absent Until / Return</th><th>Absent Duration</th>
                 <th>Punch</th>
               </tr>
             </thead>
@@ -6027,7 +5478,7 @@ export default function Dashboard() {
           <meta charset="utf-8" />
           <title>${esc(label)} List</title>
           <style>
-            @page { size: A4 portrait; margin: 14mm; }
+            @page { size: A4 landscape; margin: 14mm; }
             body { font-family: Arial, Helvetica, sans-serif; color: #111827; }
             .header { text-align: center; margin-bottom: 16px; }
             .header h1 { margin: 0; font-size: 18px; }
@@ -6196,6 +5647,12 @@ export default function Dashboard() {
 
   const isStaffDutyDetail = activeSubject === "STAFF" && detailRows.some((row) => row.duty_assignments?.length);
   const detailColumns = [
+    { title: "Reason", width: 230, render: (_, row) => row.repatriate_reason || row.osd_reason || row.exemption_description || "—" },
+    { title: "OSD Starts", width: 190, render: (_, row) => formatDashboardDateTime(row.osd_start_datetime) },
+    { title: "OSD Ends", width: 190, render: (_, row) => formatDashboardDateTime(row.osd_end_datetime) },
+    { title: "Absent From", width: 190, render: (_, row) => formatDashboardDateTime(row.absence_start) },
+    { title: "Absent Until / Return", width: 190, render: (_, row) => row.absence_end ? formatDashboardDateTime(row.absence_end) : row.absence_start ? "Ongoing at report time" : "—" },
+    { title: "Absent Duration", width: 160, render: (_, row) => row.absence_start ? formatAbsenceDuration(row.absence_duration_seconds) : "—" },
     ...(activeSubject === "STAFF" ? [{
       title: "Belt No.", dataIndex: "belt_no", width: 130,
       render: (value) => value || "Not recorded",
@@ -6210,6 +5667,7 @@ export default function Dashboard() {
           ? "Cap No."
           : "Employee ID",
       dataIndex: "employee_id",
+      render: (_, row) => employeeCode(row),
       width: 145,
     },
     {
@@ -6904,6 +6362,9 @@ export default function Dashboard() {
           </Button>
         </Card>
       )}
+      {dashboardError && <Alert type="warning" showIcon message={dashboardError} style={{marginBottom:12}} />}
+      {syncStatus.issues.length > 0 && <Alert type="warning" showIcon message="BioTime sync incomplete — saved data may be out of date"
+        description={syncStatus.issues.join(". ")} style={{marginBottom:12}} />}
       {/* TOP STATUS CARDS */}
       <Spin spinning={loading}>
         <div

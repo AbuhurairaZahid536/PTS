@@ -34,8 +34,8 @@ const root = path.resolve(__dirname, "..");
   const ctx = { normalize: (v) => String(v || "").trim().toUpperCase(), manualAbsenceText: () => "" };
   vm.runInNewContext([
     section("const STATUS_CONFIG =", "const CARD_CONFIG ="),
-    section("function rowStatusName(row) {", "/*\n|---------------------------------------------------------------------------\n| COMPLETED COURSE EXCLUSION"),
-    section("function getStatusCounts(rows) {", "/*\n|--------------------------------------------------------------------------\n| DAILY SNAPSHOT"),
+    section("function rowStatusName(row) {", "function isCompletedCourse(record)"),
+    section("function getStatusCounts(rows) {", "function buildDailySnapshot("),
     "this.classify = rowStatusName; this.counts = getStatusCounts; this.pie = buildPieData; this.labels = staffStatusNames; this.groups = buildGroupStatements;",
   ].join("\n"), ctx);
   const duty = roster.slice(0, 36).map((s, i) => ({ subject_type: "STAFF", subject_id: s.id, assignment_id: i + 1, shift_name: "1st Shift" }));
@@ -68,9 +68,9 @@ const root = path.resolve(__dirname, "..");
     rows: [{ subject_id: 71, employee_id: "SAME", attendance_status: "PRESENT" }] });
   assert.equal(ctx.classify(sharedCode[0]), "Not Processed");
   assert.equal(ctx.classify({subject_type:"STAFF",attendance_status:"EXEMPT",exemption_type:"DUTY_REST"}), "Long Weekend");
-  assert.equal(ctx.classify({subject_type:"TRAINEE",attendance_status:"NO_TIMETABLE"}), null);
-  assert.ok(dash.includes('api.get("/dashboard/staff"'));
-  assert.ok(dash.includes('api.get("/custom-shifts/attendance-summary"'));
+  assert.equal(ctx.classify({subject_type:"TRAINEE",attendance_status:"NO_TIMETABLE"}), "No Timetable");
+  assert.ok(dash.includes('api.get("/dashboard/snapshot"'));
+  assert.ok(dash.includes('support.custom_shift_rows'));
   assert.ok(dash.includes('staffMorning: staffMorningData'));
   console.log("PASS Identity collisions cannot borrow attendance; Duty Rest, trainee behavior and reconciled cache remain consistent");
 })().catch((error) => { console.error(error); process.exitCode = 1; });

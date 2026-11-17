@@ -1,3 +1,4 @@
+import { employeeCode, formatAbsenceDuration } from "../utils/dashboardRecords";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import {
@@ -1385,7 +1386,7 @@ export default function Reports({ onOpenProfile }) {
             }}
             onClick={() => openProfile(record)}
           >
-            {value || "-"}
+            {employeeCode(record)}
           </Button>
         ),
       },
@@ -1526,6 +1527,12 @@ export default function Reports({ onOpenProfile }) {
           ),
       },
 
+      { title: "Reason", width: 230, render: (_, row) => row.repatriate_reason || row.osd_reason || row.exemption_description || "—" },
+      { title: "OSD Starts", dataIndex: "osd_start_datetime", width: 190, render: formatDateTime },
+      { title: "OSD Ends", dataIndex: "osd_end_datetime", width: 190, render: formatDateTime },
+      { title: "Absent From", dataIndex: "absence_start", width: 190, render: formatDateTime },
+      { title: "Absent Until / Return", width: 190, render: (_, row) => row.absence_end ? formatDateTime(row.absence_end) : row.absence_start ? "Ongoing at report time" : "—" },
+      { title: "Absent Duration", width: 160, render: (_, row) => row.absence_start ? formatAbsenceDuration(row.absence_duration_seconds) : "—" },
       {
         title: "Manual Absence",
 

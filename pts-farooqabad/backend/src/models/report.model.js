@@ -1,3 +1,4 @@
+const { effectiveAttendanceStatus } = require("./attendanceStatus.sql");
 const { pool } = require("../config/db");
 const {
   getOpenAbsences,
@@ -403,7 +404,7 @@ function buildConditions({
   */
 
   if (attendanceStatus) {
-    conditions.push("ar.attendance_status = :attendanceStatus");
+    conditions.push(`${effectiveAttendanceStatus} = :attendanceStatus`);
 
     params.attendanceStatus = attendanceStatus;
   }
@@ -493,6 +494,23 @@ const ATTENDANCE_FROM = `
 
   LEFT JOIN zkteco_transactions zt
     ON zt.id = ar.transaction_id
+  LEFT JOIN trainee_training_drop repatriate
+    ON ar.subject_type='TRAINEE' AND repatriate.id=ar.exemption_record_id
+    AND repatriate.trainee_id=ar.subject_id AND ar.exemption_type LIKE 'TRAINING_DROP%'
+  LEFT JOIN trainee_osd trainee_osd_detail
+    ON ar.subject_type='TRAINEE' AND trainee_osd_detail.id=ar.exemption_record_id
+    AND trainee_osd_detail.trainee_id=ar.subject_id AND ar.exemption_type IN ('OSD','SHORT_PERMISSION')
+  LEFT JOIN staff_osd staff_osd_detail
+    ON ar.subject_type='STAFF' AND staff_osd_detail.id=ar.exemption_record_id
+    AND staff_osd_detail.staff_id=ar.subject_id AND ar.exemption_type IN ('OSD','SHORT_PERMISSION')
+  LEFT JOIN absence_episodes absence_detail ON ar.attendance_status='ABSENT'
+    AND absence_detail.id=(
+      SELECT history.id FROM absence_episodes history
+      WHERE history.subject_type=ar.subject_type AND history.subject_id=ar.subject_id
+        AND history.absent_from<=COALESCE(ar.late_window_end,CONCAT(ar.attendance_date,' 23:59:59'))
+        AND (history.return_punch_at IS NULL OR history.return_punch_at>=COALESCE(ar.early_window_start,CONCAT(ar.attendance_date,' 00:00:00')))
+      ORDER BY history.absent_from DESC,history.id DESC LIMIT 1
+    )
 `;
 
 /*
@@ -511,8 +529,12 @@ const ATTENDANCE_SELECT = `
 
     ar.subject_id,
 
-    ar.employee_id,
-
+    CASE WHEN ar.subject_type='TRAINEE'
+      THEN COALESCE(NULLIF(t.zkteco_emp_code,''),NULLIF(t.employee_id,''),ar.employee_id)
+      ELSE COALESCE(NULLIF(s.zkteco_emp_code,''),NULLIF(s.employee_id,''),ar.employee_id)
+    END AS employee_id,
+    ar.employee_id AS attendance_employee_id,
+    t.zkteco_emp_code AS biotime_emp_code,
     s.belt_no AS belt_no,
 
     ar.session_type,
@@ -529,15 +551,27 @@ const ATTENDANCE_SELECT = `
     zt.punch_state
       AS punch_state_code,
 
-    ar.attendance_status,
+    ar.attendance_status AS stored_attendance_status,
+    ${effectiveAttendanceStatus} AS attendance_status,
 
     ar.timing_status,
 
     ar.timing_minutes,
 
     ar.exemption_type,
-
-    ar.exemption_description,
+    ar.exemption_record_id,
+    COALESCE(repatriate.reason,trainee_osd_detail.reason,staff_osd_detail.reason,ar.exemption_description) AS exemption_description,
+    repatriate.reason AS repatriate_reason,
+    repatriate.drop_datetime AS repatriate_drop_datetime,
+    COALESCE(trainee_osd_detail.start_datetime,staff_osd_detail.start_datetime) AS osd_start_datetime,
+    COALESCE(trainee_osd_detail.end_datetime,staff_osd_detail.end_datetime) AS osd_end_datetime,
+    COALESCE(trainee_osd_detail.reason,staff_osd_detail.reason) AS osd_reason,
+    absence_detail.absent_from AS absence_start,
+    CASE WHEN absence_detail.return_punch_at<=LEAST(CONCAT(ar.attendance_date,' 23:59:59'),DATE_ADD(UTC_TIMESTAMP(),INTERVAL 5 HOUR))
+      THEN absence_detail.return_punch_at ELSE NULL END AS absence_end,
+    CASE WHEN absence_detail.id IS NULL THEN NULL ELSE GREATEST(0,TIMESTAMPDIFF(SECOND,
+      absence_detail.absent_from,LEAST(COALESCE(absence_detail.return_punch_at,DATE_ADD(UTC_TIMESTAMP(),INTERVAL 5 HOUR)),
+      CONCAT(ar.attendance_date,' 23:59:59'),DATE_ADD(UTC_TIMESTAMP(),INTERVAL 5 HOUR)))) END AS absence_duration_seconds,
 
     ar.has_manual_absence,
 
@@ -764,10 +798,11 @@ async function getAttendanceReport({
           SELECT
             COUNT(*)
               AS total,
+            SUM(${effectiveAttendanceStatus}='PENDING') AS pending,
 
             COALESCE(
               SUM(
-                ar.attendance_status =
+                ${effectiveAttendanceStatus} =
                 'PRESENT'
               ),
               0
@@ -775,7 +810,7 @@ async function getAttendanceReport({
 
             COALESCE(
               SUM(
-                ar.attendance_status =
+                ${effectiveAttendanceStatus} =
                 'ABSENT'
               ),
               0
@@ -783,7 +818,7 @@ async function getAttendanceReport({
 
             COALESCE(
               SUM(
-                ar.attendance_status =
+                ${effectiveAttendanceStatus} =
                 'EXEMPT'
               ),
               0
@@ -791,7 +826,7 @@ async function getAttendanceReport({
 
             COALESCE(
               SUM(
-                ar.attendance_status =
+                ${effectiveAttendanceStatus} =
                 'NO_TIMETABLE'
               ),
               0
@@ -865,6 +900,7 @@ async function getAttendanceReport({
 
     summary: {
       total: Number(summaryRow.total || 0),
+      pending: Number(summaryRow.pending || 0),
 
       present: Number(summaryRow.present || 0),
 

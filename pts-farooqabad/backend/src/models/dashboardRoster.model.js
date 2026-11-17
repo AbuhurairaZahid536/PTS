@@ -4,7 +4,8 @@ async function getAllTraineesForDashboard() {
   const [rows] = await pool.query(`
     SELECT
       t.id,
-      t.employee_id,
+      COALESCE(NULLIF(t.zkteco_emp_code,''),t.employee_id) AS employee_id,
+      t.zkteco_emp_code AS biotime_emp_code,
       t.belt_no,
       t.first_name,
       t.last_name,
@@ -29,8 +30,8 @@ async function getAllTraineesForDashboard() {
       AND (
         c.start_date IS NULL
         OR c.end_date IS NULL
-        OR CURDATE() < c.start_date
-        OR c.end_date >= CURDATE()
+        OR DATE(DATE_ADD(UTC_TIMESTAMP(),INTERVAL 5 HOUR)) < c.start_date
+        OR c.end_date >= DATE(DATE_ADD(UTC_TIMESTAMP(),INTERVAL 5 HOUR))
       )
     ORDER BY
       c.start_date DESC,
@@ -47,7 +48,7 @@ async function getAllTraineesForDashboard() {
 // staff without attendance records, a category, or a regular timetable.
 async function getAllStaffForDashboard() {
   const [rows] = await pool.query(`
-    SELECT s.id, s.employee_id, s.belt_no,
+    SELECT s.id, COALESCE(NULLIF(s.zkteco_emp_code,''),s.employee_id) AS employee_id, s.belt_no,
       s.first_name, s.last_name, s.status, s.designation,
       s.category_id, sc.category_name, s.branch_id, sb.branch_name
     FROM staff s

@@ -18,6 +18,7 @@ const { getLeaves } = require("../models/leave.model");
 const { getRecords: getOsdRecords } = require("../models/osd.model");
 
 const { calculateDutyRosterAttendance } = require("../models/dutyRoster.model");
+const { calculateCustomShiftAttendance } = require("../models/customShift.model");
 
 /*
 |--------------------------------------------------------------------------
@@ -43,13 +44,14 @@ function shouldIncludeSupportData(req) {
   return value === "1" || value === "true";
 }
 
-async function safeSupportLoad(label, loader, fallback = []) {
+async function safeSupportLoad(label, loader) {
   try {
     return await loader();
   } catch (error) {
     console.error(`Dashboard support data failed (${label}):`, error);
 
-    return fallback;
+    error.message = `Dashboard source ${label} failed: ${error.message}`;
+    throw error;
   }
 }
 
@@ -58,9 +60,8 @@ function isValidDateString(value) {
     return false;
   }
 
-  const parsed = new Date(`${value}T00:00:00`);
-
-  return !Number.isNaN(parsed.getTime());
+  const parsed = new Date(`${value}T00:00:00Z`);
+  return !Number.isNaN(parsed.getTime()) && parsed.toISOString().slice(0,10) === value;
 }
 
 /*
@@ -258,8 +259,8 @@ async function dashboardSnapshot(req, res, next) {
     |
     | All independent support queries run in parallel.
     |
-    | One optional support query failing must NOT break the complete
-    | Dashboard snapshot.
+    | A failed support source rejects the snapshot; the browser keeps its
+    | last complete snapshot and warns instead of silently showing zero.
     |
     |--------------------------------------------------------------------------
     */
@@ -352,6 +353,7 @@ async function dashboardSnapshot(req, res, next) {
               }),
           ),
 
+          safeSupportLoad("custom-shift-attendance", async () => (await calculateCustomShiftAttendance(attendanceDate)).rows || []),
           safeSupportLoad(
             "duty-roster-attendance",
             async () => {
@@ -371,6 +373,7 @@ async function dashboardSnapshot(req, res, next) {
             staffHomeRest,
             traineeMedicalRest,
             staffMedicalRest,
+            customShiftRows,
             shiftAttendanceRows,
           ]) => ({
             training_drops: trainingDrops,
@@ -384,6 +387,7 @@ async function dashboardSnapshot(req, res, next) {
             trainee_medical_rest: traineeMedicalRest,
             staff_medical_rest: staffMedicalRest,
             shift_attendance_rows: shiftAttendanceRows,
+            custom_shift_rows: customShiftRows,
           }),
         )
       : Promise.resolve(null);
@@ -544,6 +548,9 @@ async function dashboardSnapshot(req, res, next) {
         */
 
         attendance_date: attendanceDate,
+        generated_at: new Date().toISOString(),
+        timezone: "Asia/Karachi",
+        source_authority: { identities: "ZKBioTime", punches: "ZKBioTime", operational_records: "PTS" },
 
         /*
         |--------------------------------------------------------------------------

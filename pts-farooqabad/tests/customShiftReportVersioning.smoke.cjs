@@ -25,6 +25,7 @@ const pool = {
 const report = load('backend/src/models/report.model.js',{
   '../config/db': {pool},
   './absenceEpisode.model': {getOpenAbsences: async()=>[]},
+  './attendanceStatus.sql': require('../backend/src/models/attendanceStatus.sql'),
 });
 const profile = load('backend/src/models/profile.model.js', {
   '../config/db': {pool},

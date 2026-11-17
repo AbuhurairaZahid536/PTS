@@ -157,6 +157,12 @@ async function processCurrentAttendance(
         null,
     });
 
+  if (Number(attendance?.failed || 0) > 0) {
+    const error = new Error(`BioTime transactions were saved, but attendance has ${attendance.failed} unresolved identity/processing failure(s).`);
+    error.statusCode = 409;
+    throw error;
+  }
+
   /*
   |------------------------------------------------------------------------
   | IMMEDIATE CONTINUOUS-ABSENCE RECONCILIATION
@@ -346,11 +352,11 @@ async function syncEmployeeMaster(
     return res.json({
       success:
         failed === 0 &&
-        conflicts === 0,
+        conflicts === 0 && result.complete !== false,
 
       message:
         failed === 0 &&
-        conflicts === 0
+        conflicts === 0 && result.complete !== false
           ? "ZKBioTime employee master sync completed successfully."
           : "ZKBioTime employee master sync completed with warnings.",
 
@@ -424,8 +430,7 @@ async function executeLivePipeline() {
   */
 
   if (
-    inserted >
-    0
+    inserted > 0 || Number(syncResult?.changed || 0) > 0
   ) {
     attendanceRefreshPending =
       true;
@@ -481,16 +486,13 @@ async function executeLivePipeline() {
   if (
     attendanceRefreshPending
   ) {
-    attendanceSummary =
-      await processCurrentAttendance(
-        date
-      );
+    const affectedDates = [...new Set([date, ...(syncResult.attendance_dates || [])])];
+    const summaries = [];
+    for (const affectedDate of affectedDates) summaries.push(await processCurrentAttendance(affectedDate));
+    attendanceSummary = summaries.find(item => item.attendance_date === date) || summaries[0];
 
-    attendanceRefreshPending =
-      false;
-
-    attendanceRecalculated =
-      true;
+    attendanceRefreshPending = summaries.some(item => Number(item.failed || 0) > 0 || item.continuous_absence_error || Number(item.continuous_absence?.failed || 0) > 0);
+    attendanceRecalculated = !attendanceRefreshPending;
   }
 
 
@@ -560,16 +562,13 @@ async function executeManualPipeline(
     failed ===
     0
   ) {
-    attendanceSummary =
-      await processCurrentAttendance(
-        date
-      );
+    const affectedDates = [...new Set([date, ...(result.attendance_dates || [])])];
+    const summaries = [];
+    for (const affectedDate of affectedDates) summaries.push(await processCurrentAttendance(affectedDate));
+    attendanceSummary = summaries.find(item => item.attendance_date === date) || summaries[0];
 
-    attendanceRefreshPending =
-      false;
-
-    attendanceRecalculated =
-      true;
+    attendanceRefreshPending = summaries.some(item => Number(item.failed || 0) > 0 || item.continuous_absence_error || Number(item.continuous_absence?.failed || 0) > 0);
+    attendanceRecalculated = !attendanceRefreshPending;
   } else {
     attendanceRefreshPending =
       true;
@@ -661,8 +660,7 @@ async function runManualTransactionSync(
     */
 
     if (
-      result?.sync_mode ===
-      "MANUAL"
+      result?.sync_mode === "MANUAL" && result.attendance_date === date
     ) {
       return result;
     }
@@ -718,8 +716,7 @@ async function syncTransactions(
       getLocalDateString();
 
     if (
-      date !==
-      today
+      !/^\d{4}-\d{2}-\d{2}$/.test(date) || date > today
     ) {
       return res
         .status(400)
@@ -728,7 +725,7 @@ async function syncTransactions(
             false,
 
           message:
-            "Manual ZKBioTime sync sirf current date ke liye allowed hai. Previous dates local database history se load hoti hain.",
+            "Select a valid current or previous date for BioTime reconciliation.",
         });
     }
 
@@ -747,12 +744,13 @@ async function syncTransactions(
 
     return res.json({
       success:
-        failed === 0,
+        failed === 0 && result.attendance_pending !== true,
 
       message:
-        failed === 0
-          ? `Current-date sync and attendance calculation completed. ${result.synced || 0} transaction(s) processed.`
-          : `Current-date biometric sync completed with ${failed} failure(s). Attendance will retry after the next successful sync.`,
+        failed === 0 && result.attendance_pending !== true
+          ? `Selected-date sync and attendance calculation completed. ${result.synced || 0} transaction(s) processed.`
+          : result.attendance_pending && failed === 0 ? "BioTime transactions saved; attendance/absence refresh is pending."
+          : `Selected-date biometric sync completed with ${failed} failure(s). Attendance will retry after the next successful sync.`,
 
       data:
         result,
@@ -821,9 +819,10 @@ async function syncLiveTransactions(
     }
 
 
+    if (result.attendance_pending) message = "BioTime transactions saved; attendance/absence refresh is pending or incomplete.";
     return res.json({
       success:
-        failed === 0,
+        failed === 0 && result.attendance_pending !== true,
 
       message,
 
@@ -1444,6 +1443,8 @@ async function deleteBiometricTemplates(
 
 module.exports = {
   syncEmployeeMaster,
+  runLiveTransactionSync,
+  runEmployeeMasterSync,
 
   syncTransactions,
   syncLiveTransactions,

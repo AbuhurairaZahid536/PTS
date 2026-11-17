@@ -172,7 +172,18 @@ function getRunningKeys() {
 |--------------------------------------------------------------------------
 */
 
+const exclusiveTails = new Map();
+function runExclusive(key, task) {
+  const previous = exclusiveTails.get(key) || Promise.resolve();
+  const current = previous.catch(() => {}).then(task);
+  const tail = current.then(() => {}, () => {});
+  exclusiveTails.set(key, tail);
+  tail.then(() => { if (exclusiveTails.get(key) === tail) exclusiveTails.delete(key); });
+  return current;
+}
+
 module.exports = {
+  runExclusive,
   runSingleFlight,
   isRunning,
   getRunningKeys,
