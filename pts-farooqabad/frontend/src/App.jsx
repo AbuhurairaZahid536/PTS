@@ -5,7 +5,6 @@ import {
   Layout,
   Menu,
   Typography,
-  Dropdown,
   Space,
   Avatar,
   Button,
@@ -1451,66 +1450,36 @@ export default function App({ brandLogoUrl = "" }) {
 
   /*
   |--------------------------------------------------------------------------
-  | USER MENU
+  | SIGN OUT
   |--------------------------------------------------------------------------
   */
 
-  const userMenu = {
-    items: [
-      {
-        key: "user",
+  const handleLogout = () => {
+    setSelectedPage("dashboard");
 
-        icon: <UserOutlined />,
+    setProfileTarget(null);
 
-        label: user?.fullName || user?.username || "User",
+    setOpenKeys([]);
 
-        disabled: true,
-      },
+    setMobileMenuOpen(false);
 
-      {
-        type: "divider",
-      },
+    employeeMasterSyncStartedRef.current = false;
 
-      {
-        key: "logout",
+    setEmployeeMasterSyncReady(false);
 
-        icon: <LogoutOutlined />,
+    setGeneralStatementCourses([]);
 
-        label: "Sign out",
-      },
-    ],
+    setRuntimeSettings(DEFAULT_RUNTIME_SETTINGS);
 
-    onClick: ({ key }) => {
-      if (key !== "logout") {
-        return;
-      }
+    writeBrowserHistory({
+      page: "dashboard",
 
-      setSelectedPage("dashboard");
+      profile: null,
 
-      setProfileTarget(null);
+      replace: true,
+    });
 
-      setOpenKeys([]);
-
-      setMobileMenuOpen(false);
-
-      employeeMasterSyncStartedRef.current = false;
-
-      setEmployeeMasterSyncReady(false);
-
-      setGeneralStatementCourses([]);
-
-      setRuntimeSettings(DEFAULT_RUNTIME_SETTINGS);
-
-      writeBrowserHistory({
-        page: "dashboard",
-
-        profile: null,
-
-        replace: true,
-      });
-
-      logout();
-    },
+    logout();
   };
 
   /*
@@ -2473,25 +2442,25 @@ export default function App({ brandLogoUrl = "" }) {
 
                 {canManagePublicSite && <PublicSuggestionsBell />}
 
-                <Dropdown menu={userMenu} trigger={["click"]}>
-                  <Button
-                    type="text"
-                    aria-label="User menu"
-                    style={{
-                      width: 42,
+                <Button
+                  type="text"
+                  aria-label="Sign out"
+                  title="Sign out"
+                  onClick={handleLogout}
+                  style={{
+                    width: 42,
 
-                      height: 42,
+                    height: 42,
 
-                      padding: 0,
+                    padding: 0,
 
-                      flex: "0 0 42px",
+                    flex: "0 0 42px",
 
-                      color: "#28506D",
-                    }}
-                  >
-                    <Avatar size="small" icon={<UserOutlined />} />
-                  </Button>
-                </Dropdown>
+                    color: "#28506D",
+                  }}
+                >
+                  <LogoutOutlined />
+                </Button>
               </>
             ) : (
               <>
@@ -2506,22 +2475,25 @@ export default function App({ brandLogoUrl = "" }) {
 
                 {canManagePublicSite && <PublicSuggestionsBell />}
 
-                <Dropdown menu={userMenu} trigger={["click"]}>
-                  <Button
-                    type="text"
-                    style={{
-                      color: "#28506D",
+                <Button
+                  type="text"
+                  aria-label="Sign out"
+                  title="Sign out"
+                  onClick={handleLogout}
+                  style={{
+                    color: "#28506D",
 
-                      flex: "0 0 auto",
-                    }}
-                  >
-                    <Space>
-                      <Avatar size="small" icon={<UserOutlined />} />
+                    flex: "0 0 auto",
+                  }}
+                >
+                  <Space>
+                    <Avatar size="small" icon={<UserOutlined />} />
 
-                      <span>{user?.fullName || user?.username || "User"}</span>
-                    </Space>
-                  </Button>
-                </Dropdown>
+                    <span>{user?.fullName || user?.username || "User"}</span>
+                    <LogoutOutlined />
+                    <span>Sign out</span>
+                  </Space>
+                </Button>
               </>
             )}
           </Header>
