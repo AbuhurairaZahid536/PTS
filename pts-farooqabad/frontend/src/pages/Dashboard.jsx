@@ -50,6 +50,7 @@ import dayjs from "dayjs";
 
 import api from "../services/api";
 import { employeeCode, activeRepatriates, repatriateMatches, formatAbsenceDuration, pakistanNow } from "../utils/dashboardRecords";
+import { dashboardDetailVisibility } from "../utils/dashboardDetailVisibility";
 import { collectStaffDutyAssignments, reconcileStaffCategoryDuty } from "../utils/staffDashboardDuty";
 import { useAuth } from "../contexts/AuthContext";
 
@@ -4678,6 +4679,7 @@ export default function Dashboard() {
     useState("");
 
   const isRepatriateDetail = /repatriate/i.test(detailTitle);
+  const detailVisibility = dashboardDetailVisibility(detailTitle);
 
   const [detailRows, setDetailRows] =
     useState([]);
@@ -5289,6 +5291,11 @@ export default function Dashboard() {
         .replace(/"/g, "&quot;")
         .replace(/'/g, "&#039;");
 
+    const detailCell = (key, value) => detailVisibility[key] !== false
+      ? `<td>${esc(value)}</td>` : "";
+    const detailHeading = (key, title) => detailVisibility[key] !== false
+      ? `<th>${esc(title)}</th>` : "";
+
     const rowsHtml =
       detailRows
         .map((row) => {
@@ -5328,14 +5335,15 @@ export default function Dashboard() {
               ${activeSubject === "STAFF" ? `<td>${esc(row.belt_no || "Not recorded")}</td><td>${esc((row.duty_assignments || []).map(staffDutyDescription).join("; ") || "—")}</td>` : ""}
               <td>${esc(group)}</td>
               <td>${esc(subGroup)}</td>
-              <td>${esc(status)}</td>
+              ${detailCell("dashboardStatus", status)}
               <td>${esc(row.attendance_status || "-")}</td>
-              <td>${esc(formatTime(row.selected_punch))}</td>
-              ${!isRepatriateDetail ? `<td>${esc(formatDashboardDateTime(row.osd_start_datetime))}</td><td>${esc(formatDashboardDateTime(row.osd_end_datetime))}</td>
-              <td>${esc(formatDashboardDateTime(row.absence_start))}</td>
-              <td>${esc(row.absence_end ? formatDashboardDateTime(row.absence_end) : row.absence_start ? "Ongoing at report time" : "—")}</td>
-              <td>${esc(row.absence_start ? formatAbsenceDuration(row.absence_duration_seconds) : "—")}</td>` : ""}
-              <td>${esc(row.repatriate_reason || row.osd_reason || row.exemption_description || "—")}</td>
+              ${detailCell("punch", formatTime(row.selected_punch))}
+              ${detailCell("osdStart", formatDashboardDateTime(row.osd_start_datetime))}
+              ${detailCell("osdEnd", formatDashboardDateTime(row.osd_end_datetime))}
+              ${detailCell("absenceStart", formatDashboardDateTime(row.absence_start))}
+              ${detailCell("absenceEnd", row.absence_end ? formatDashboardDateTime(row.absence_end) : row.absence_start ? "Ongoing at report time" : "—")}
+              ${detailCell("absenceDuration", row.absence_start ? formatAbsenceDuration(row.absence_duration_seconds) : "—")}
+              ${detailCell("reason", row.repatriate_reason || row.osd_reason || row.exemption_description || "—")}
             </tr>
           `;
         })
@@ -5413,11 +5421,15 @@ export default function Dashboard() {
                 ${activeSubject === "STAFF" ? "<th>Belt No.</th><th>Assigned Duty / Shift</th>" : ""}
                 <th>${activeSubject === "TRAINEE" ? "Course" : "Category"}</th>
                 <th>${activeSubject === "TRAINEE" ? "Platoon" : "Branch"}</th>
-                <th>Dashboard Status</th>
+                ${detailHeading("dashboardStatus", "Dashboard Status")}
                 <th>Attendance</th>
-                <th>Punch</th>
-                ${!isRepatriateDetail ? "<th>OSD Starts</th><th>OSD Ends</th><th>Absent From</th><th>Absent Until / Return</th><th>Absent Duration</th>" : ""}
-                <th>Reason</th>
+                ${detailHeading("punch", "Punch")}
+                ${detailHeading("osdStart", "OSD Starts")}
+                ${detailHeading("osdEnd", "OSD Ends")}
+                ${detailHeading("absenceStart", "Absent From")}
+                ${detailHeading("absenceEnd", "Absent Until / Return")}
+                ${detailHeading("absenceDuration", "Absent Duration")}
+                ${detailHeading("reason", "Reason")}
               </tr>
             </thead>
             <tbody>${rowsHtml}</tbody>
@@ -5719,7 +5731,7 @@ export default function Dashboard() {
       : []),
 
     {
-      title: "Dashboard Head",
+      key: "dashboardStatus", title: "Dashboard Head",
       width: 135,
       render: (_, row) => {
         const name =
@@ -5767,7 +5779,7 @@ export default function Dashboard() {
       ),
     },
     {
-      title: "Punch",
+      key: "punch", title: "Punch",
       width: 105,
       render: (_, row) =>
         formatTime(
@@ -5775,14 +5787,14 @@ export default function Dashboard() {
         ),
     },
     ...(!isRepatriateDetail ? [
-      { title: "OSD Starts", width: 190, render: (_, row) => formatDashboardDateTime(row.osd_start_datetime) },
-      { title: "OSD Ends", width: 190, render: (_, row) => formatDashboardDateTime(row.osd_end_datetime) },
-      { title: "Absent From", width: 190, render: (_, row) => formatDashboardDateTime(row.absence_start) },
-      { title: "Absent Until / Return", width: 190, render: (_, row) => row.absence_end ? formatDashboardDateTime(row.absence_end) : row.absence_start ? "Ongoing at report time" : "—" },
-      { title: "Absent Duration", width: 160, render: (_, row) => row.absence_start ? formatAbsenceDuration(row.absence_duration_seconds) : "—" },
+      { key: "osdStart", title: "OSD Starts", width: 190, render: (_, row) => formatDashboardDateTime(row.osd_start_datetime) },
+      { key: "osdEnd", title: "OSD Ends", width: 190, render: (_, row) => formatDashboardDateTime(row.osd_end_datetime) },
+      { key: "absenceStart", title: "Absent From", width: 190, render: (_, row) => formatDashboardDateTime(row.absence_start) },
+      { key: "absenceEnd", title: "Absent Until / Return", width: 190, render: (_, row) => row.absence_end ? formatDashboardDateTime(row.absence_end) : row.absence_start ? "Ongoing at report time" : "—" },
+      { key: "absenceDuration", title: "Absent Duration", width: 160, render: (_, row) => row.absence_start ? formatAbsenceDuration(row.absence_duration_seconds) : "—" },
     ] : []),
-    { title: "Reason", width: 230, render: (_, row) => row.repatriate_reason || row.osd_reason || row.exemption_description || "—" },
-  ];
+    { key: "reason", title: "Reason", width: 230, render: (_, row) => row.repatriate_reason || row.osd_reason || row.exemption_description || "—" },
+  ].filter((column) => detailVisibility[column.key] !== false);
 
   return (
     <div className="pts-dashboard-root">
