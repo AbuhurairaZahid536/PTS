@@ -379,40 +379,6 @@ app.use(
 
 /*
 |--------------------------------------------------------------------------
-| LOGIN RATE LIMIT
-|--------------------------------------------------------------------------
-|
-| Login protection remains IP based. The higher allowance prevents several
-| legitimate PTS LAN computers from locking each other out during testing.
-|--------------------------------------------------------------------------
-*/
-
-app.use(
-  `${config.apiPrefix}/auth/login`,
-
-  rateLimit({
-    windowMs:
-      15 *
-      60 *
-      1000,
-
-    limit:
-      60,
-
-    standardHeaders:
-      true,
-
-    legacyHeaders:
-      false,
-
-    keyGenerator:
-      requestNetworkKey,
-  })
-);
-
-
-/*
-|--------------------------------------------------------------------------
 | AUTHENTICATED API RATE LIMIT
 |--------------------------------------------------------------------------
 |
