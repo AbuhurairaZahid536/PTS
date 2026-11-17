@@ -4,16 +4,17 @@ export function dashboardDetailVisibility(title, subjectType) {
   const absent = status === "absent";
   const present = status === "present";
   const repatriate = status === "repatriate";
+  const leave = status === "leave";
   const totalTrainees = subjectType === "TRAINEE" && status === "total enrolled";
   return {
     attendance: !totalTrainees,
     dashboardStatus: !totalTrainees && !absent,
-    punch: !totalTrainees && !absent,
-    osdStart: !totalTrainees && !absent && !present && !repatriate,
-    osdEnd: !totalTrainees && !absent && !present && !repatriate,
-    absenceStart: !totalTrainees && !present && !repatriate,
-    absenceEnd: !totalTrainees && !absent && !present && !repatriate,
-    absenceDuration: !totalTrainees && !present && !repatriate,
+    punch: !leave && !totalTrainees && !absent,
+    osdStart: !leave && !totalTrainees && !absent && !present && !repatriate,
+    osdEnd: !leave && !totalTrainees && !absent && !present && !repatriate,
+    absenceStart: !leave && !totalTrainees && !present && !repatriate,
+    absenceEnd: !leave && !totalTrainees && !absent && !present && !repatriate,
+    absenceDuration: !leave && !totalTrainees && !present && !repatriate,
     reason: !totalTrainees && !absent && !present,
   };
 }
