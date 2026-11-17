@@ -51,6 +51,7 @@ import dayjs from "dayjs";
 import api from "../services/api";
 import { employeeCode, activeRepatriates, repatriateMatches, formatAbsenceDuration, pakistanNow } from "../utils/dashboardRecords";
 import { dashboardDetailVisibility } from "../utils/dashboardDetailVisibility";
+import { enrichDashboardOperationalDetails } from "../utils/dashboardOperationalDetails";
 import { collectStaffDutyAssignments, reconcileStaffCategoryDuty } from "../utils/staffDashboardDuty";
 import { useAuth } from "../contexts/AuthContext";
 
@@ -4680,6 +4681,8 @@ export default function Dashboard() {
 
   const isRepatriateDetail = /repatriate/i.test(detailTitle);
   const detailVisibility = dashboardDetailVisibility(detailTitle, activeSubject);
+  const osdEndTitle = activeSubject === "TRAINEE" ? "OSD Till" : "OSD Ends";
+  const [operationalSupport, setOperationalSupport] = useState({});
 
   const [detailRows, setDetailRows] =
     useState([]);
@@ -4738,6 +4741,7 @@ export default function Dashboard() {
   const requestedDateRef = useRef("");
   requestedDateRef.current = selectedDate.format("YYYY-MM-DD");
   const restoreSupport = useCallback((data, date) => {
+    setOperationalSupport(data);
     setRepatriates(filterCompletedCourseRows(activeRepatriates(data.training_drops || [], date)));
     setWeekends(data.weekends || []);
     setTraineeMedicalRest(filterCompletedCourseRows(data.trainee_medical_rest || []));
@@ -5270,7 +5274,7 @@ export default function Dashboard() {
             belt_no: row.belt_no || row.staff_belt_no || rosterById.get(Number(row.subject_id))?.belt_no }
         : row);
       setDetailTitle(title);
-      setDetailRows(enriched);
+      setDetailRows(enrichDashboardOperationalDetails(enriched, operationalSupport));
       setDetailOpen(true);
     };
 
@@ -5332,18 +5336,21 @@ export default function Dashboard() {
             <tr>
               <td>${esc(employeeCode(row))}</td>
               <td>${esc(name)}</td>
-              ${activeSubject === "STAFF" ? `<td>${esc(row.belt_no || "Not recorded")}</td><td>${esc((row.duty_assignments || []).map(staffDutyDescription).join("; ") || "—")}</td>` : ""}
+              ${activeSubject === "STAFF" ? `<td>${esc(row.belt_no || "Not recorded")}</td>${detailCell("assignedDuty", (row.duty_assignments || []).map(staffDutyDescription).join("; ") || "—")}` : ""}
               <td>${esc(group)}</td>
               <td>${esc(subGroup)}</td>
+              ${detailCell("repatriateDate", formatDashboardDateTime(row.repatriate_drop_datetime || row.drop_datetime))}
               ${detailCell("dashboardStatus", status)}
               ${detailCell("attendance", row.attendance_status || "-")}
               ${detailCell("punch", formatTime(row.selected_punch))}
+              ${detailCell("leaveStart", formatDashboardDateTime(row.leave_start_datetime))}
+              ${detailCell("leaveEnd", formatDashboardDateTime(row.leave_end_datetime))}
               ${detailCell("osdStart", formatDashboardDateTime(row.osd_start_datetime))}
               ${detailCell("osdEnd", formatDashboardDateTime(row.osd_end_datetime))}
               ${detailCell("absenceStart", formatDashboardDateTime(row.absence_start))}
               ${detailCell("absenceEnd", row.absence_end ? formatDashboardDateTime(row.absence_end) : row.absence_start ? "Ongoing at report time" : "—")}
               ${detailCell("absenceDuration", row.absence_start ? formatAbsenceDuration(row.absence_duration_seconds) : "—")}
-              ${detailCell("reason", row.repatriate_reason || row.osd_reason || row.exemption_description || "—")}
+              ${detailCell("reason", row.repatriate_reason || row.leave_reason || row.osd_reason || row.exemption_description || "—")}
             </tr>
           `;
         })
@@ -5418,14 +5425,17 @@ export default function Dashboard() {
               <tr>
                 <th>${esc(identifierTitle)}</th>
                 <th>Name</th>
-                ${activeSubject === "STAFF" ? "<th>Belt No.</th><th>Assigned Duty / Shift</th>" : ""}
+                ${activeSubject === "STAFF" ? `<th>Belt No.</th>${detailHeading("assignedDuty", "Assigned Duty / Shift")}` : ""}
                 <th>${activeSubject === "TRAINEE" ? "Course" : "Category"}</th>
                 <th>${activeSubject === "TRAINEE" ? "Platoon" : "Branch"}</th>
+                ${detailHeading("repatriateDate", "Date")}
                 ${detailHeading("dashboardStatus", "Dashboard Status")}
                 ${detailHeading("attendance", "Attendance")}
                 ${detailHeading("punch", "Punch")}
+                ${detailHeading("leaveStart", "Leave From")}
+                ${detailHeading("leaveEnd", "Leave Till")}
                 ${detailHeading("osdStart", "OSD Starts")}
-                ${detailHeading("osdEnd", "OSD Ends")}
+                ${detailHeading("osdEnd", osdEndTitle)}
                 ${detailHeading("absenceStart", "Absent From")}
                 ${detailHeading("absenceEnd", "Absent Until / Return")}
                 ${detailHeading("absenceDuration", "Absent Duration")}
@@ -5679,7 +5689,7 @@ export default function Dashboard() {
       render: (value) => value || "Not recorded",
     }] : []),
     ...(isStaffDutyDetail ? [{
-      title: "Assigned Duty / Shift", width: 300,
+      key: "assignedDuty", title: "Assigned Duty / Shift", width: 300,
       render: (_, row) => (row.duty_assignments || []).map((assignment) => staffDutyDescription(assignment)).join("; ") || "—",
     }] : []),
     {
@@ -5715,8 +5725,8 @@ export default function Dashboard() {
     ...(isRepatriateDetail
       ? [
           {
-            title:
-              "Date of Repatriate",
+            key: "repatriateDate",
+            title: "Date",
 
             width: 190,
 
@@ -5787,14 +5797,16 @@ export default function Dashboard() {
           row.selected_punch
         ),
     },
+    { key: "leaveStart", title: "Leave From", width: 190, render: (_, row) => formatDashboardDateTime(row.leave_start_datetime) },
+    { key: "leaveEnd", title: "Leave Till", width: 190, render: (_, row) => formatDashboardDateTime(row.leave_end_datetime) },
     ...(!isRepatriateDetail ? [
       { key: "osdStart", title: "OSD Starts", width: 190, render: (_, row) => formatDashboardDateTime(row.osd_start_datetime) },
-      { key: "osdEnd", title: "OSD Ends", width: 190, render: (_, row) => formatDashboardDateTime(row.osd_end_datetime) },
+      { key: "osdEnd", title: osdEndTitle, width: 190, render: (_, row) => formatDashboardDateTime(row.osd_end_datetime) },
       { key: "absenceStart", title: "Absent From", width: 190, render: (_, row) => formatDashboardDateTime(row.absence_start) },
       { key: "absenceEnd", title: "Absent Until / Return", width: 190, render: (_, row) => row.absence_end ? formatDashboardDateTime(row.absence_end) : row.absence_start ? "Ongoing at report time" : "—" },
       { key: "absenceDuration", title: "Absent Duration", width: 160, render: (_, row) => row.absence_start ? formatAbsenceDuration(row.absence_duration_seconds) : "—" },
     ] : []),
-    { key: "reason", title: "Reason", width: 230, render: (_, row) => row.repatriate_reason || row.osd_reason || row.exemption_description || "—" },
+    { key: "reason", title: "Reason", width: 230, render: (_, row) => row.repatriate_reason || row.leave_reason || row.osd_reason || row.exemption_description || "—" },
   ].filter((column) => detailVisibility[column.key] !== false);
 
   return (
