@@ -4679,7 +4679,7 @@ export default function Dashboard() {
     useState("");
 
   const isRepatriateDetail = /repatriate/i.test(detailTitle);
-  const detailVisibility = dashboardDetailVisibility(detailTitle);
+  const detailVisibility = dashboardDetailVisibility(detailTitle, activeSubject);
 
   const [detailRows, setDetailRows] =
     useState([]);
@@ -5336,7 +5336,7 @@ export default function Dashboard() {
               <td>${esc(group)}</td>
               <td>${esc(subGroup)}</td>
               ${detailCell("dashboardStatus", status)}
-              <td>${esc(row.attendance_status || "-")}</td>
+              ${detailCell("attendance", row.attendance_status || "-")}
               ${detailCell("punch", formatTime(row.selected_punch))}
               ${detailCell("osdStart", formatDashboardDateTime(row.osd_start_datetime))}
               ${detailCell("osdEnd", formatDashboardDateTime(row.osd_end_datetime))}
@@ -5422,7 +5422,7 @@ export default function Dashboard() {
                 <th>${activeSubject === "TRAINEE" ? "Course" : "Category"}</th>
                 <th>${activeSubject === "TRAINEE" ? "Platoon" : "Branch"}</th>
                 ${detailHeading("dashboardStatus", "Dashboard Status")}
-                <th>Attendance</th>
+                ${detailHeading("attendance", "Attendance")}
                 ${detailHeading("punch", "Punch")}
                 ${detailHeading("osdStart", "OSD Starts")}
                 ${detailHeading("osdEnd", "OSD Ends")}
@@ -5762,6 +5762,7 @@ export default function Dashboard() {
       },
     },
     {
+      key: "attendance",
       title: "Attendance",
       dataIndex:
         "attendance_status",
