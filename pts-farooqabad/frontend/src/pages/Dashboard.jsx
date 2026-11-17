@@ -5277,7 +5277,7 @@ export default function Dashboard() {
     const identifierTitle =
       activeSubject === "TRAINEE"
         ? "Cap No."
-        : "Employee ID";
+        : "Employee No.";
 
     const esc = (value) =>
       String(
@@ -5291,7 +5291,7 @@ export default function Dashboard() {
 
     const rowsHtml =
       detailRows
-        .map((row, index) => {
+        .map((row) => {
           const name =
             row.subject_name ||
             [
@@ -5323,7 +5323,6 @@ export default function Dashboard() {
 
           return `
             <tr>
-              <td>${index + 1}</td>
               <td>${esc(employeeCode(row))}</td>
               <td>${esc(name)}</td>
               ${activeSubject === "STAFF" ? `<td>${esc(row.belt_no || "Not recorded")}</td><td>${esc((row.duty_assignments || []).map(staffDutyDescription).join("; ") || "—")}</td>` : ""}
@@ -5331,11 +5330,11 @@ export default function Dashboard() {
               <td>${esc(subGroup)}</td>
               <td>${esc(status)}</td>
               <td>${esc(row.attendance_status || "-")}</td>
+              <td>${esc(formatTime(row.selected_punch))}</td>
               ${!isRepatriateDetail ? `<td>${esc(formatDashboardDateTime(row.osd_start_datetime))}</td><td>${esc(formatDashboardDateTime(row.osd_end_datetime))}</td>
               <td>${esc(formatDashboardDateTime(row.absence_start))}</td>
               <td>${esc(row.absence_end ? formatDashboardDateTime(row.absence_end) : row.absence_start ? "Ongoing at report time" : "—")}</td>
               <td>${esc(row.absence_start ? formatAbsenceDuration(row.absence_duration_seconds) : "—")}</td>` : ""}
-              <td>${esc(formatTime(row.selected_punch))}</td>
               <td>${esc(row.repatriate_reason || row.osd_reason || row.exemption_description || "—")}</td>
             </tr>
           `;
@@ -5409,7 +5408,6 @@ export default function Dashboard() {
           <table>
             <thead>
               <tr>
-                <th>Sr.</th>
                 <th>${esc(identifierTitle)}</th>
                 <th>Name</th>
                 ${activeSubject === "STAFF" ? "<th>Belt No.</th><th>Assigned Duty / Shift</th>" : ""}
@@ -5417,8 +5415,9 @@ export default function Dashboard() {
                 <th>${activeSubject === "TRAINEE" ? "Platoon" : "Branch"}</th>
                 <th>Dashboard Status</th>
                 <th>Attendance</th>
+                <th>Punch</th>
                 ${!isRepatriateDetail ? "<th>OSD Starts</th><th>OSD Ends</th><th>Absent From</th><th>Absent Until / Return</th><th>Absent Duration</th>" : ""}
-                <th>Punch</th><th>Reason</th>
+                <th>Reason</th>
               </tr>
             </thead>
             <tbody>${rowsHtml}</tbody>
@@ -5649,26 +5648,11 @@ export default function Dashboard() {
 
   const isStaffDutyDetail = activeSubject === "STAFF" && detailRows.some((row) => row.duty_assignments?.length);
   const detailColumns = [
-    ...(!isRepatriateDetail ? [
-      { title: "OSD Starts", width: 190, render: (_, row) => formatDashboardDateTime(row.osd_start_datetime) },
-      { title: "OSD Ends", width: 190, render: (_, row) => formatDashboardDateTime(row.osd_end_datetime) },
-      { title: "Absent From", width: 190, render: (_, row) => formatDashboardDateTime(row.absence_start) },
-      { title: "Absent Until / Return", width: 190, render: (_, row) => row.absence_end ? formatDashboardDateTime(row.absence_end) : row.absence_start ? "Ongoing at report time" : "—" },
-      { title: "Absent Duration", width: 160, render: (_, row) => row.absence_start ? formatAbsenceDuration(row.absence_duration_seconds) : "—" },
-    ] : []),
-    ...(activeSubject === "STAFF" ? [{
-      title: "Belt No.", dataIndex: "belt_no", width: 130,
-      render: (value) => value || "Not recorded",
-    }] : []),
-    ...(isStaffDutyDetail ? [{
-      title: "Assigned Duty / Shift", width: 300,
-      render: (_, row) => (row.duty_assignments || []).map((assignment) => staffDutyDescription(assignment)).join("; ") || "—",
-    }] : []),
     {
       title:
         activeSubject === "TRAINEE"
           ? "Cap No."
-          : "Employee ID",
+          : "Employee No.",
       dataIndex: "employee_id",
       render: (_, row) => employeeCode(row),
       width: 145,
@@ -5678,6 +5662,14 @@ export default function Dashboard() {
       dataIndex: "subject_name",
       width: 185,
     },
+    ...(activeSubject === "STAFF" ? [{
+      title: "Belt No.", dataIndex: "belt_no", width: 130,
+      render: (value) => value || "Not recorded",
+    }] : []),
+    ...(isStaffDutyDetail ? [{
+      title: "Assigned Duty / Shift", width: 300,
+      render: (_, row) => (row.duty_assignments || []).map((assignment) => staffDutyDescription(assignment)).join("; ") || "—",
+    }] : []),
     {
       title:
         activeSubject ===
@@ -5782,6 +5774,13 @@ export default function Dashboard() {
           row.selected_punch
         ),
     },
+    ...(!isRepatriateDetail ? [
+      { title: "OSD Starts", width: 190, render: (_, row) => formatDashboardDateTime(row.osd_start_datetime) },
+      { title: "OSD Ends", width: 190, render: (_, row) => formatDashboardDateTime(row.osd_end_datetime) },
+      { title: "Absent From", width: 190, render: (_, row) => formatDashboardDateTime(row.absence_start) },
+      { title: "Absent Until / Return", width: 190, render: (_, row) => row.absence_end ? formatDashboardDateTime(row.absence_end) : row.absence_start ? "Ongoing at report time" : "—" },
+      { title: "Absent Duration", width: 160, render: (_, row) => row.absence_start ? formatAbsenceDuration(row.absence_duration_seconds) : "—" },
+    ] : []),
     { title: "Reason", width: 230, render: (_, row) => row.repatriate_reason || row.osd_reason || row.exemption_description || "—" },
   ];
 
