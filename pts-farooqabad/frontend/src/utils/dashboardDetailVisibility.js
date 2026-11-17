@@ -7,9 +7,9 @@ export function dashboardDetailVisibility(title, subjectType) {
   const leave = status === "leave";
   const totalTrainees = subjectType === "TRAINEE" && status === "total enrolled";
   return {
-    attendance: !totalTrainees,
+    attendance: !totalTrainees && !repatriate,
     dashboardStatus: !totalTrainees && !absent,
-    punch: !leave && !totalTrainees && !absent,
+    punch: !leave && !totalTrainees && !absent && !repatriate,
     osdStart: !leave && !totalTrainees && !absent && !present && !repatriate,
     osdEnd: !leave && !totalTrainees && !absent && !present && !repatriate,
     absenceStart: !leave && !totalTrainees && !present && !repatriate,
