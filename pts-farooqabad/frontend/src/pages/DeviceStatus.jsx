@@ -23,12 +23,12 @@ import {
   Select,
   Space,
   Statistic,
-  Table,
   Tag,
   Tooltip,
   Typography,
   message,
 } from "antd";
+import Table from "../components/SerialTable";
 
 import {
   CloudUploadOutlined,

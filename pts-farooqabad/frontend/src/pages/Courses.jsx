@@ -14,11 +14,11 @@ import {
   Select,
   Space,
   Statistic,
-  Table,
   Tag,
   Typography,
   message,
 } from "antd";
+import Table from "../components/SerialTable";
 
 import {
   CalendarOutlined,

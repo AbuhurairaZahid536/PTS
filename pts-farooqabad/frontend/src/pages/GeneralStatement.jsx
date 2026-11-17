@@ -10,11 +10,11 @@ import {
   Row,
   Space,
   Statistic,
-  Table,
   Tag,
   Typography,
   message,
 } from "antd";
+import Table from "../components/SerialTable";
 
 import { PrinterOutlined, ReloadOutlined } from "@ant-design/icons";
 
@@ -723,14 +723,15 @@ export default function GeneralStatement({ courseId, onOpenProfile }) {
 
               return (
                 <Table.Summary.Row>
-                  <Table.Summary.Cell index={0}>
+                  <Table.Summary.Cell index={0} />
+                  <Table.Summary.Cell index={1}>
                     <Text strong>Grand Total</Text>
                   </Table.Summary.Cell>
 
                   {fields.map((key, index) => (
                     <Table.Summary.Cell
                       key={key}
-                      index={index + 1}
+                      index={index + 2}
                       align="center"
                     >
                       <Text strong>{num(total[key])}</Text>
@@ -867,6 +868,7 @@ export default function GeneralStatement({ courseId, onOpenProfile }) {
               <table className="gs-summary-print-table">
                 <thead>
                   <tr>
+                    <th>Sr. No.</th>
                     <th>Platoon</th>
 
                     <th>Total Strength</th>
@@ -896,8 +898,9 @@ export default function GeneralStatement({ courseId, onOpenProfile }) {
                 </thead>
 
                 <tbody>
-                  {summaryRows.map((row) => (
+                  {summaryRows.map((row, index) => (
                     <tr key={row.platoon_label}>
+                      <td>{index + 1}</td>
                       <td>{row.platoon_label}</td>
 
                       <td>{num(row.total_strength)}</td>
@@ -927,6 +930,7 @@ export default function GeneralStatement({ courseId, onOpenProfile }) {
                   ))}
 
                   <tr className="gs-grand-total">
+                    <td></td>
                     <td>Grand Total</td>
 
                     <td>{num(total.total_strength)}</td>

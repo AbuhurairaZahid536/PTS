@@ -52,10 +52,10 @@ export default function PublicSuggestionsBell() {
         placement="right" width={Math.min(window.innerWidth - 18, 510)} open={open} onClose={() => setOpen(false)}
         extra={<Button size="small" icon={<ReloadOutlined />} loading={loading} onClick={() => refresh()}>Refresh</Button>}>
         <Typography.Paragraph type="secondary">Suggestions submitted by visitors through the public website. Only authorized website administrators can view them.</Typography.Paragraph>
-        <List loading={loading} locale={{ emptyText: <Empty description="No public suggestions yet" /> }} dataSource={items} renderItem={(item) => (
+        <List loading={loading} locale={{ emptyText: <Empty description="No public suggestions yet" /> }} dataSource={items} renderItem={(item, index) => (
           <List.Item key={item.id} style={{ display: "block", background: item.status === "NEW" ? "#f2f8ff" : "transparent", padding: 14, borderRadius: 8, marginBottom: 10, border: "1px solid #e3eaf2" }}>
             <Space style={{ width: "100%", justifyContent: "space-between" }} wrap>
-              <Typography.Text strong>{item.visitor_name || "Visitor"}</Typography.Text>
+              <Typography.Text strong>{page * pageSize + index + 1}. {item.visitor_name || "Visitor"}</Typography.Text>
               <Tag color={item.status === "NEW" ? "blue" : "default"}>{item.status}</Tag>
             </Space>
             <div><Typography.Text copyable>{item.visitor_email}</Typography.Text></div>

@@ -19,11 +19,11 @@ import {
   Select,
   Space,
   Spin,
-  Table,
   Tag,
   Typography,
   message,
 } from "antd";
+import Table from "../components/SerialTable";
 
 import {
   ClearOutlined,

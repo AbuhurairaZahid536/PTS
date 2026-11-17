@@ -16,11 +16,11 @@ import {
   Select,
   Space,
   Switch,
-  Table,
   Tag,
   Typography,
   message,
 } from "antd";
+import Table from "../components/SerialTable";
 
 import {
   CheckCircleOutlined,

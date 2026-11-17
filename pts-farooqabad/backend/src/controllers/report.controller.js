@@ -621,7 +621,7 @@ async function exportAttendanceReport(
       } Attendance Report`;
 
     worksheet.mergeCells(
-      "A1:P1"
+      "A1:Q1"
     );
 
     worksheet.getCell(
@@ -655,7 +655,7 @@ async function exportAttendanceReport(
       25;
 
     worksheet.mergeCells(
-      "A2:P2"
+      "A2:Q2"
     );
 
     worksheet.getCell(
@@ -684,7 +684,7 @@ async function exportAttendanceReport(
     };
 
     worksheet.mergeCells(
-      "A3:P3"
+      "A3:Q3"
     );
 
     worksheet.getCell(
@@ -714,6 +714,7 @@ async function exportAttendanceReport(
       );
 
     headerRow.values = [
+      "Sr. No.",
       "Employee ID/Cap No.",
 
       "Name",
@@ -785,6 +786,7 @@ async function exportAttendanceReport(
     */
 
     const widths = [
+      8,
       20,
       30,
       30,
@@ -819,7 +821,7 @@ async function exportAttendanceReport(
 
     rows.forEach(
       (
-        row
+        row, index
       ) => {
         let timing =
           row.timing_status ||
@@ -880,6 +882,7 @@ async function exportAttendanceReport(
 
         const dataRow =
           worksheet.addRow([
+            index + 1,
             row.employee_id ||
               "-",
 
@@ -1017,7 +1020,7 @@ async function exportAttendanceReport(
         "A5",
 
       to:
-        "P5",
+        "Q5",
     };
 
     /*
@@ -1281,7 +1284,7 @@ async function exportLongWeekendReport(
       );
 
     worksheet.mergeCells(
-      "A1:I1"
+      "A1:J1"
     );
 
     worksheet.getCell(
@@ -1307,7 +1310,7 @@ async function exportLongWeekendReport(
     };
 
     worksheet.mergeCells(
-      "A2:I2"
+      "A2:J2"
     );
 
     worksheet.getCell(
@@ -1333,7 +1336,7 @@ async function exportLongWeekendReport(
     };
 
     worksheet.mergeCells(
-      "A3:I3"
+      "A3:J3"
     );
 
     worksheet.getCell(
@@ -1354,6 +1357,7 @@ async function exportLongWeekendReport(
       );
 
     headerRow.values = [
+      "Sr. No.",
       "Cap No.",
       "Name",
       "Course",
@@ -1372,9 +1376,10 @@ async function exportLongWeekendReport(
 
     rows.forEach(
       (
-        row
+        row, index
       ) => {
         worksheet.addRow([
+            index + 1,
           row.employee_id ||
           "-",
 
@@ -1430,6 +1435,7 @@ async function exportLongWeekendReport(
     );
 
     worksheet.columns = [
+      { width: 8 },
       {
         width:
           18,
@@ -2118,7 +2124,7 @@ async function exportContinuousAbsenceReport(
     */
 
     worksheet.mergeCells(
-      "A1:I1"
+      "A1:J1"
     );
 
     worksheet.getCell(
@@ -2153,7 +2159,7 @@ async function exportContinuousAbsenceReport(
 
 
     worksheet.mergeCells(
-      "A2:I2"
+      "A2:J2"
     );
 
     worksheet.getCell(
@@ -2183,7 +2189,7 @@ async function exportContinuousAbsenceReport(
 
 
     worksheet.mergeCells(
-      "A3:I3"
+      "A3:J3"
     );
 
     worksheet.getCell(
@@ -2214,6 +2220,7 @@ async function exportContinuousAbsenceReport(
       );
 
     headerRow.values = [
+      "Sr. No.",
       "Employee ID / Cap No.",
       "Name",
       "Course / Category",
@@ -2274,6 +2281,7 @@ async function exportContinuousAbsenceReport(
     */
 
     const widths = [
+      8,
       22,
       30,
       30,
@@ -2308,7 +2316,7 @@ async function exportContinuousAbsenceReport(
 
     rows.forEach(
       (
-        row
+        row, index
       ) => {
         const groupName =
           row.subject_type ===
@@ -2335,6 +2343,7 @@ async function exportContinuousAbsenceReport(
 
         const dataRow =
           worksheet.addRow([
+            index + 1,
             row.employee_id ||
               "-",
 
@@ -2466,7 +2475,7 @@ async function exportContinuousAbsenceReport(
         "A5",
 
       to:
-        "I5",
+        "J5",
     };
 
 
@@ -2663,7 +2672,7 @@ async function exportCustomShiftReport(req, res, next) {
       },
     });
 
-    worksheet.mergeCells("A1:M1");
+    worksheet.mergeCells("A1:N1");
     worksheet.getCell("A1").value = "POLICE TRAINING SCHOOL FAROOQABAD";
     worksheet.getCell("A1").font = {
       bold: true,
@@ -2675,7 +2684,7 @@ async function exportCustomShiftReport(req, res, next) {
     };
     worksheet.getRow(1).height = 25;
 
-    worksheet.mergeCells("A2:M2");
+    worksheet.mergeCells("A2:N2");
     worksheet.getCell("A2").value = "Custom Shift Duty Attendance Report";
     worksheet.getCell("A2").font = {
       bold: true,
@@ -2686,7 +2695,7 @@ async function exportCustomShiftReport(req, res, next) {
       vertical: "middle",
     };
 
-    worksheet.mergeCells("A3:M3");
+    worksheet.mergeCells("A3:N3");
     worksheet.getCell("A3").value =
       `Attendance Date: ${params.attendanceDate}     |     Total Records: ${rows.length}`;
     worksheet.getCell("A3").alignment = {
@@ -2696,6 +2705,7 @@ async function exportCustomShiftReport(req, res, next) {
 
     const headerRow = worksheet.getRow(5);
     headerRow.values = [
+      "Sr. No.",
       "Employee ID / Cap No.",
       "Name",
       "Category",
@@ -2732,6 +2742,7 @@ async function exportCustomShiftReport(req, res, next) {
     headerRow.height = 28;
 
     [
+      8,
       20,
       28,
       24,
@@ -2749,7 +2760,7 @@ async function exportCustomShiftReport(req, res, next) {
       worksheet.getColumn(index + 1).width = width;
     });
 
-    rows.forEach((row) => {
+    rows.forEach((row, index) => {
       const schedule =
         row.start_time && row.end_time
           ? `${String(row.start_time).slice(0, 8)} - ${String(row.end_time).slice(0, 8)}`
@@ -2762,6 +2773,7 @@ async function exportCustomShiftReport(req, res, next) {
         : "-";
 
       const dataRow = worksheet.addRow([
+        index + 1,
         row.employee_id || row.belt_no || "-",
         row.subject_name || "-",
         row.category_name || "-",
@@ -2810,7 +2822,7 @@ async function exportCustomShiftReport(req, res, next) {
 
     worksheet.autoFilter = {
       from: "A5",
-      to: "M5",
+      to: "N5",
     };
 
     worksheet.headerFooter.oddFooter =

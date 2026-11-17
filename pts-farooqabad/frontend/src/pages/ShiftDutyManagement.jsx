@@ -16,13 +16,13 @@ import {
   Row,
   Select,
   Space,
-  Table,
   Tabs,
   Tag,
   TimePicker,
   Typography,
   message,
 } from "antd";
+import Table from "../components/SerialTable";
 import {
   CopyOutlined,
   DeleteOutlined,
@@ -1642,6 +1642,7 @@ export default function ShiftDutyManagement() {
             <table className="official-roster-table">
               <thead>
                 <tr>
+                  <th style={{ width: 60 }}>Sr. No.</th>
                   <th style={{ width: "25%" }}>Duty Point</th>
 
                   {SHIFT_OPTIONS.map((option) => {
@@ -1664,8 +1665,9 @@ export default function ShiftDutyManagement() {
               </thead>
 
               <tbody>
-                {allDutyPoints(viewingRoster).map((pointName) => (
+                {allDutyPoints(viewingRoster).map((pointName, index) => (
                   <tr key={pointName}>
+                    <td>{index + 1}</td>
                     <td>
                       <strong>{pointName}</strong>
                     </td>

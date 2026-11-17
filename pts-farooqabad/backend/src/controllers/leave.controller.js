@@ -2558,6 +2558,7 @@ async function exportLeavesExcel(
       );
 
     sheet.columns = [
+      { header: "Sr. No.", key: "serial_number", width: 8 },
       {
         header:
           "Employee ID/Cap No.",
@@ -2715,11 +2716,13 @@ async function exportLeavesExcel(
         true,
     };
 
+    let serialNumber = 0;
     for (
       const row
       of rows
     ) {
       sheet.addRow({
+        serial_number: ++serialNumber,
         employee_id:
           row.employee_id,
 

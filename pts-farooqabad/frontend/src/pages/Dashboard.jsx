@@ -20,11 +20,11 @@ import {
   Row,
   Space,
   Spin,
-  Table,
   Tag,
   Typography,
   message,
 } from "antd";
+import Table from "../components/SerialTable";
 
 import {
   CalendarOutlined,
@@ -5302,7 +5302,7 @@ export default function Dashboard() {
 
     const rowsHtml =
       detailRows
-        .map((row) => {
+        .map((row, index) => {
           const name =
             row.subject_name ||
             [
@@ -5334,6 +5334,7 @@ export default function Dashboard() {
 
           return `
             <tr>
+              <td>${index + 1}</td>
               <td>${esc(employeeCode(row))}</td>
               <td>${esc(name)}</td>
               ${activeSubject === "STAFF" ? `<td>${esc(row.belt_no || "Not recorded")}</td>${detailCell("assignedDuty", (row.duty_assignments || []).map(staffDutyDescription).join("; ") || "—")}` : ""}
@@ -5423,6 +5424,7 @@ export default function Dashboard() {
           <table>
             <thead>
               <tr>
+                <th>Sr. No.</th>
                 <th>${esc(identifierTitle)}</th>
                 <th>Name</th>
                 ${activeSubject === "STAFF" ? `<th>Belt No.</th>${detailHeading("assignedDuty", "Assigned Duty / Shift")}` : ""}

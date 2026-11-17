@@ -16,12 +16,12 @@ import {
   Select,
   Space,
   Switch,
-  Table,
   Tag,
   TimePicker,
   Typography,
   message,
 } from "antd";
+import Table from "../components/SerialTable";
 
 import {
   DeleteOutlined,

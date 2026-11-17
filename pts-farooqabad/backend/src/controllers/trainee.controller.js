@@ -1598,6 +1598,7 @@ async function exportTraineesExcel(req, res, next) {
     const worksheet = workbook.addWorksheet("Trainees");
 
     worksheet.columns = [
+      { header: "Sr. No.", key: "serial_number", width: 8 },
       {
         header: "Employee ID / Cap No.",
 
@@ -1747,8 +1748,10 @@ async function exportTraineesExcel(req, res, next) {
       },
     ];
 
+    let serialNumber = 0;
     for (const row of rows) {
       worksheet.addRow({
+        serial_number: ++serialNumber,
         ...row,
 
         zk_status: row.zkteco_synced

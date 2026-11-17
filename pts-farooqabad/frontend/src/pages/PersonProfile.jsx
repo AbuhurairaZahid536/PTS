@@ -20,13 +20,13 @@ import {
   Space,
   Spin,
   Statistic,
-  Table,
   Tabs,
   Tag,
   Typography,
   Upload,
   message,
 } from "antd";
+import Table from "../components/SerialTable";
 
 import {
   ArrowLeftOutlined,
@@ -1931,6 +1931,7 @@ function PrintTable({ rows = [], preferredKeys = [] }) {
     <table className="official-print-table">
       <thead>
         <tr>
+          <th>Sr. No.</th>
           {keys.map((key) => (
             <th key={key}>{prettyKey(key)}</th>
           ))}
@@ -1940,6 +1941,7 @@ function PrintTable({ rows = [], preferredKeys = [] }) {
       <tbody>
         {rows.map((row, index) => (
           <tr key={row.id || index}>
+            <td>{index + 1}</td>
             {keys.map((key) => {
               const value = row[key];
 

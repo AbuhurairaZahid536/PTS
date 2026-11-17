@@ -467,6 +467,7 @@ async function exportTransactions(
     );
 
   sheet.columns = [
+    { header: "Sr. No.", key: "serial_number", width: 8 },
     {
       header:
         "Transaction ID",
@@ -555,8 +556,8 @@ async function exportTransactions(
     },
   ];
 
-  rows.forEach((row) => {
-    sheet.addRow(row);
+  rows.forEach((row, index) => {
+    sheet.addRow({ ...row, serial_number: index + 1 });
   });
 
   sheet.getRow(1).font = {
@@ -577,7 +578,7 @@ async function exportTransactions(
       "A1",
 
     to:
-      "L1",
+      "M1",
   };
 
   return {

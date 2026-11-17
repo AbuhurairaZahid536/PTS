@@ -9,7 +9,6 @@ import {
   InputNumber,
   Modal,
   Select,
-  Table,
   Tag,
   Result,
   Row,
@@ -18,6 +17,7 @@ import {
   Typography,
   message,
 } from "antd";
+import Table from "../components/SerialTable";
 
 import {
   PlusOutlined,

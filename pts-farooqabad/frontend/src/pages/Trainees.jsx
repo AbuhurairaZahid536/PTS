@@ -16,12 +16,12 @@ import {
   Row,
   Select,
   Space,
-  Table,
   Tag,
   Typography,
   Upload,
   message,
 } from "antd";
+import Table from "../components/SerialTable";
 
 import {
   DeleteOutlined,

@@ -17,12 +17,12 @@ import {
   Select,
   Space,
   Switch,
-  Table,
   Tag,
   Typography,
   Upload,
   message,
 } from "antd";
+import Table from "../components/SerialTable";
 
 import {
   CalendarOutlined,
