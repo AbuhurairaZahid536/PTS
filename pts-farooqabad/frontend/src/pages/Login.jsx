@@ -10,6 +10,7 @@ import {
 } from "@ant-design/icons";
 
 import { useAuth } from "../contexts/AuthContext";
+import { loginErrorMessage } from "../utils/loginError";
 
 const { Title, Text } = Typography;
 
@@ -28,10 +29,7 @@ export default function Login({ onBackHome, brandLogoUrl }) {
     try {
       await login(values.username, values.password);
     } catch (err) {
-      setError(
-        err.response?.data?.message ||
-          "Unable to sign in. Please check your username and password.",
-      );
+      setError(loginErrorMessage(err));
     } finally {
       setLoading(false);
     }
@@ -179,6 +177,9 @@ export default function Login({ onBackHome, brandLogoUrl }) {
                 prefix={<UserOutlined />}
                 placeholder="Enter username"
                 autoComplete="username"
+                autoCapitalize="none"
+                autoCorrect="off"
+                spellCheck={false}
                 disabled={loading}
               />
             </Form.Item>

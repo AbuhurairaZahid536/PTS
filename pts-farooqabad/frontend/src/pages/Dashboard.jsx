@@ -4677,6 +4677,8 @@ export default function Dashboard() {
   const [detailTitle, setDetailTitle] =
     useState("");
 
+  const isRepatriateDetail = /repatriate/i.test(detailTitle);
+
   const [detailRows, setDetailRows] =
     useState([]);
 
@@ -5329,12 +5331,12 @@ export default function Dashboard() {
               <td>${esc(subGroup)}</td>
               <td>${esc(status)}</td>
               <td>${esc(row.attendance_status || "-")}</td>
-              <td>${esc(row.repatriate_reason || row.osd_reason || row.exemption_description || "—")}</td>
-              <td>${esc(formatDashboardDateTime(row.osd_start_datetime))}</td><td>${esc(formatDashboardDateTime(row.osd_end_datetime))}</td>
+              ${!isRepatriateDetail ? `<td>${esc(formatDashboardDateTime(row.osd_start_datetime))}</td><td>${esc(formatDashboardDateTime(row.osd_end_datetime))}</td>
               <td>${esc(formatDashboardDateTime(row.absence_start))}</td>
               <td>${esc(row.absence_end ? formatDashboardDateTime(row.absence_end) : row.absence_start ? "Ongoing at report time" : "—")}</td>
-              <td>${esc(row.absence_start ? formatAbsenceDuration(row.absence_duration_seconds) : "—")}</td>
+              <td>${esc(row.absence_start ? formatAbsenceDuration(row.absence_duration_seconds) : "—")}</td>` : ""}
               <td>${esc(formatTime(row.selected_punch))}</td>
+              <td>${esc(row.repatriate_reason || row.osd_reason || row.exemption_description || "—")}</td>
             </tr>
           `;
         })
@@ -5414,9 +5416,9 @@ export default function Dashboard() {
                 <th>${activeSubject === "TRAINEE" ? "Course" : "Category"}</th>
                 <th>${activeSubject === "TRAINEE" ? "Platoon" : "Branch"}</th>
                 <th>Dashboard Status</th>
-                <th>Attendance</th><th>Reason</th><th>OSD Starts</th><th>OSD Ends</th>
-                <th>Absent From</th><th>Absent Until / Return</th><th>Absent Duration</th>
-                <th>Punch</th>
+                <th>Attendance</th>
+                ${!isRepatriateDetail ? "<th>OSD Starts</th><th>OSD Ends</th><th>Absent From</th><th>Absent Until / Return</th><th>Absent Duration</th>" : ""}
+                <th>Punch</th><th>Reason</th>
               </tr>
             </thead>
             <tbody>${rowsHtml}</tbody>
@@ -5647,12 +5649,13 @@ export default function Dashboard() {
 
   const isStaffDutyDetail = activeSubject === "STAFF" && detailRows.some((row) => row.duty_assignments?.length);
   const detailColumns = [
-    { title: "Reason", width: 230, render: (_, row) => row.repatriate_reason || row.osd_reason || row.exemption_description || "—" },
-    { title: "OSD Starts", width: 190, render: (_, row) => formatDashboardDateTime(row.osd_start_datetime) },
-    { title: "OSD Ends", width: 190, render: (_, row) => formatDashboardDateTime(row.osd_end_datetime) },
-    { title: "Absent From", width: 190, render: (_, row) => formatDashboardDateTime(row.absence_start) },
-    { title: "Absent Until / Return", width: 190, render: (_, row) => row.absence_end ? formatDashboardDateTime(row.absence_end) : row.absence_start ? "Ongoing at report time" : "—" },
-    { title: "Absent Duration", width: 160, render: (_, row) => row.absence_start ? formatAbsenceDuration(row.absence_duration_seconds) : "—" },
+    ...(!isRepatriateDetail ? [
+      { title: "OSD Starts", width: 190, render: (_, row) => formatDashboardDateTime(row.osd_start_datetime) },
+      { title: "OSD Ends", width: 190, render: (_, row) => formatDashboardDateTime(row.osd_end_datetime) },
+      { title: "Absent From", width: 190, render: (_, row) => formatDashboardDateTime(row.absence_start) },
+      { title: "Absent Until / Return", width: 190, render: (_, row) => row.absence_end ? formatDashboardDateTime(row.absence_end) : row.absence_start ? "Ongoing at report time" : "—" },
+      { title: "Absent Duration", width: 160, render: (_, row) => row.absence_start ? formatAbsenceDuration(row.absence_duration_seconds) : "—" },
+    ] : []),
     ...(activeSubject === "STAFF" ? [{
       title: "Belt No.", dataIndex: "belt_no", width: 130,
       render: (value) => value || "Not recorded",
@@ -5705,13 +5708,7 @@ export default function Dashboard() {
           ? `Platoon ${row.platoon_number}`
           : row.branch_name || "-",
     },
-    ...(String(
-      detailTitle || ""
-    )
-      .toLowerCase()
-      .includes(
-        "repatriate"
-      )
+    ...(isRepatriateDetail
       ? [
           {
             title:
@@ -5785,6 +5782,7 @@ export default function Dashboard() {
           row.selected_punch
         ),
     },
+    { title: "Reason", width: 230, render: (_, row) => row.repatriate_reason || row.osd_reason || row.exemption_description || "—" },
   ];
 
   return (
