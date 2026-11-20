@@ -494,6 +494,12 @@ const STAFF_CARD_CONFIG = [
     icon: <CheckCircleOutlined />,
   },
   {
+    key: "Duty",
+    title: "On Duty",
+    ...STATUS_CONFIG.Duty,
+    icon: <ClockCircleOutlined />,
+  },
+  {
     key: "Absent",
     title: "Absent",
     ...STATUS_CONFIG.Absent,
@@ -5806,7 +5812,11 @@ export default function Dashboard() {
       { key: "osdEnd", title: osdEndTitle, width: 190, render: (_, row) => formatDashboardDateTime(row.osd_end_datetime) },
       { key: "absenceStart", title: "Absent From", width: 190, render: (_, row) => formatDashboardDateTime(row.absence_start) },
       { key: "absenceEnd", title: "Absent Until / Return", width: 190, render: (_, row) => row.absence_end ? formatDashboardDateTime(row.absence_end) : row.absence_start ? "Ongoing at report time" : "—" },
-      { key: "absenceDuration", title: "Absent Duration", width: 160, render: (_, row) => row.absence_start ? formatAbsenceDuration(row.absence_duration_seconds) : "—" },
+    { key: "absenceDuration", title: "Absent Duration", width: 160, defaultSortOrder: "ascend", sorter: (a, b) => {
+      const durationA = a.absence_start ? Number(a.absence_duration_seconds || 0) : Number.POSITIVE_INFINITY;
+      const durationB = b.absence_start ? Number(b.absence_duration_seconds || 0) : Number.POSITIVE_INFINITY;
+      return durationA - durationB;
+    }, render: (_, row) => row.absence_start ? formatAbsenceDuration(row.absence_duration_seconds) : "—" },
     ] : []),
     { key: "reason", title: "Reason", width: 230, render: (_, row) => row.repatriate_reason || row.leave_reason || row.osd_reason || row.exemption_description || "—" },
   ].filter((column) => detailVisibility[column.key] !== false);

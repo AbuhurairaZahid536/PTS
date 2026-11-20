@@ -1497,6 +1497,17 @@ export default function Reports({ onOpenProfile }) {
       },
 
       {
+        title: "Late (min)",
+        dataIndex: "timing_minutes",
+        width: 110,
+        align: "center",
+        render: (value, record) =>
+          record.timing_status === "LATE" && value !== null && value !== undefined
+            ? `${value} min`
+            : "-",
+      },
+
+      {
         title: "Exemption",
 
         width: 240,
@@ -1532,7 +1543,11 @@ export default function Reports({ onOpenProfile }) {
       { title: "OSD Ends", dataIndex: "osd_end_datetime", width: 190, render: formatDateTime },
       { title: "Absent From", dataIndex: "absence_start", width: 190, render: formatDateTime },
       { title: "Absent Until / Return", width: 190, render: (_, row) => row.absence_end ? formatDateTime(row.absence_end) : row.absence_start ? "Ongoing at report time" : "—" },
-      { title: "Absent Duration", width: 160, render: (_, row) => row.absence_start ? formatAbsenceDuration(row.absence_duration_seconds) : "—" },
+      { title: "Absent Duration", width: 160, defaultSortOrder: "ascend", sorter: (a, b) => {
+        const durationA = a.absence_start ? Number(a.absence_duration_seconds || 0) : Number.POSITIVE_INFINITY;
+        const durationB = b.absence_start ? Number(b.absence_duration_seconds || 0) : Number.POSITIVE_INFINITY;
+        return durationA - durationB;
+      }, render: (_, row) => row.absence_start ? formatAbsenceDuration(row.absence_duration_seconds) : "—" },
       {
         title: "Manual Absence",
 
@@ -3314,6 +3329,8 @@ export default function Reports({ onOpenProfile }) {
 
                 <th>Timing</th>
 
+                <th>Late (min)</th>
+
                 <th>Exemption</th>
 
                 <th>Manual Absence</th>
@@ -3357,6 +3374,12 @@ export default function Reports({ onOpenProfile }) {
                     record.timing_minutes !== undefined
                       ? ` (${record.timing_minutes} min)`
                       : ""}
+                  </td>
+
+                  <td>
+                    {record.timing_status === "LATE" && record.timing_minutes !== null && record.timing_minutes !== undefined
+                      ? `${record.timing_minutes} min`
+                      : "-"}
                   </td>
 
                   <td>{record.exemption_type || "-"}</td>
