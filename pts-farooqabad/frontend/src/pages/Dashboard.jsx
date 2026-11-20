@@ -495,8 +495,9 @@ const STAFF_CARD_CONFIG = [
   },
   {
     key: "Duty",
-    title: "On Duty",
+    title: "Shift Duty",
     ...STATUS_CONFIG.Duty,
+    color: "#25C253",
     icon: <ClockCircleOutlined />,
   },
   {
