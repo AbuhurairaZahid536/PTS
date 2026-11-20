@@ -374,7 +374,7 @@ const STATUS_CONFIG = {
     color: "#F59E0B",
     soft: "#FFFBEB",
   },
-  Duty: { color: "#2563EB", soft: "#EFF6FF" },
+  Duty: { color: "#25C253", soft: "#EFF6FF" },
   "No Timetable": { color: "#DC2626", soft: "#FEF2F2" },
   "Not Processed": { color: "#94A3B8", soft: "#F8FAFC" },
   Repatriate: {
