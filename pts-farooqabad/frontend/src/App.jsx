@@ -2025,6 +2025,19 @@ export default function App({ brandLogoUrl = "" }) {
             line-height: 1.08;
           }
 
+          .pts-header-notifications {
+            display: flex;
+            align-items: center;
+            flex: 0 0 auto;
+            margin-left: auto;
+          }
+
+          @media (max-width: 767px) {
+            .pts-header-notifications {
+              margin-left: 0;
+            }
+          }
+
           .pts-header-school {
             color: #17324A;
             font-size: 17px;
@@ -2440,7 +2453,14 @@ export default function App({ brandLogoUrl = "" }) {
                   </div>
                 </div>
 
-                {canManagePublicSite && <PublicSuggestionsBell />}
+                {canManagePublicSite && (
+                  <div
+                    className="pts-header-notifications"
+                    aria-label="Notifications"
+                  >
+                    <PublicSuggestionsBell />
+                  </div>
+                )}
 
                 <Button
                   type="text"
@@ -2473,7 +2493,14 @@ export default function App({ brandLogoUrl = "" }) {
                   </span>
                 </div>
 
-                {canManagePublicSite && <PublicSuggestionsBell />}
+                {canManagePublicSite && (
+                  <div
+                    className="pts-header-notifications"
+                    aria-label="Notifications"
+                  >
+                    <PublicSuggestionsBell />
+                  </div>
+                )}
 
                 <Button
                   type="text"
